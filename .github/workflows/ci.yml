@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   own-checks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
     steps:
