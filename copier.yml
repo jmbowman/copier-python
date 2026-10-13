@@ -1,0 +1,35 @@
+# Strict Python baseline for repos built with agentic_development.
+# Design: docs/high-level-design.md and docs/intent/.
+_subdirectory: template
+_answers_file: .copier-answers.python.yml
+_preserve_symlinks: true
+_min_copier_version: "9.6.0"
+_skip_if_exists:
+  - .ruff.toml
+  - .config/mise/config.toml
+  - docs/arrows/index.yaml
+  - .github/workflows/ci.yml
+  - .github/renovate.json
+
+forge:
+  type: str
+  help: Where the repo is hosted; selects the CI stub and the Renovate config location.
+  choices:
+    - github
+  default: github
+
+line_length:
+  type: int
+  help: Maximum line length for ruff's formatter and E501.
+  default: 100
+
+copyright_notice_regex:
+  type: str
+  help: Regex for a copyright notice every Python file must carry. Leave empty for none.
+  default: ""
+
+# The agentic_development release this template version's stubs reference.
+agentic_development_ref:
+  type: str
+  default: v0.1.0  # renovate: datasource=github-tags depName=jmbowman/agentic_development
+  when: false

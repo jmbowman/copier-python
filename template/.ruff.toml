@@ -1,0 +1,4 @@
+extend = ".config/copier-python/ruff.toml"
+
+# Named exceptions to the strict profile: one path pattern each, with the rules it relaxes.
+[lint.extend-per-file-ignores]

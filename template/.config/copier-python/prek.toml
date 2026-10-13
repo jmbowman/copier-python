@@ -1,0 +1,38 @@
+# Commit-time hooks owned by the copier-python template; add repo hooks via `hooks-extra`.
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "lint"
+name = "lint"
+entry = "mise run lint"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "typecheck"
+name = "typecheck"
+entry = "mise run typecheck"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "lid"
+name = "lid"
+entry = "mise run lid"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "conflicts"
+name = "conflicts"
+entry = "mise run conflicts"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "hooks-extra"
+name = "hooks-extra"
+entry = "mise run hooks-extra"
+language = "system"
+pass_filenames = false

@@ -1,0 +1,9 @@
+# Strict ty settings owned by the copier-python template; found through TY_CONFIG_FILE.
+[rules]
+all = "error"
+
+[analysis]
+respect-type-ignore-comments = false
+
+[src]
+exclude = [".config/copier-python"]

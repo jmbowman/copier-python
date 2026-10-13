@@ -1,0 +1,9 @@
+# This repo's strict ty settings, matching the template's.
+[rules]
+all = "error"
+
+[analysis]
+respect-type-ignore-comments = false
+
+[src]
+exclude = ["tests/fixtures"]

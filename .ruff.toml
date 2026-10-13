@@ -1,0 +1,20 @@
+# This repo's strict profile, hand-maintained to match the template's until it applies here.
+line-length = 100
+# template/ holds files to render, including a .ruff.toml that only works in consumers.
+extend-exclude = ["template", "tests/fixtures"]
+
+[lint]
+select = ["ALL"]
+ignore = [
+    "W191", "E111", "E114", "E117", "D206", "D300",  # conflict with the ruff formatter
+    "Q000", "Q001", "Q002", "Q003", "Q004",  # conflict with the ruff formatter
+    "COM812", "COM819", "ISC002",  # conflict with the ruff formatter
+    "CPY001",  # no copyright notice required in this repo
+]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.per-file-ignores]
+"**/tests/**" = ["S101", "PLR2004"]  # pytest asserts and literal comparisons
+"template/.config/copier-python/exceptions.py" = ["INP001"]  # a standalone script, not a package module

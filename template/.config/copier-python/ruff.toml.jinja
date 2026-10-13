@@ -1,0 +1,29 @@
+# Strict ruff base owned by the copier-python template. Record exceptions in the repo's .ruff.toml.
+line-length = {{ line_length }}
+extend-exclude = ["."]  # this directory: template files are checked in the template repo
+
+[lint]
+select = ["ALL"]
+# Formatter conflicts: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+ignore = [
+    "W191", "E111", "E114", "E117", "D206", "D300",  # conflict with the ruff formatter
+    "Q000", "Q001", "Q002", "Q003", "Q004",  # conflict with the ruff formatter
+    "COM812", "COM819", "ISC002",  # conflict with the ruff formatter
+{%- if not copyright_notice_regex %}
+    "CPY001",  # no copyright notice required (copyright_notice_regex is empty)
+{%- endif %}
+]
+{%- if copyright_notice_regex %}
+
+[lint.flake8-copyright]
+notice-rgx = {{ copyright_notice_regex | tojson }}
+{%- endif %}
+
+[lint.pydocstyle]
+convention = "google"
+
+# Paths resolve from this file's directory, so `../../` starts them at the repo root.
+[lint.per-file-ignores]
+"../../**/tests/**" = ["S101", "PLR2004"]  # pytest asserts and literal comparisons
+"../../**/test_*.py" = ["S101", "PLR2004"]  # pytest asserts and literal comparisons
+"../../**/conftest.py" = ["S101", "PLR2004"]  # pytest asserts and literal comparisons

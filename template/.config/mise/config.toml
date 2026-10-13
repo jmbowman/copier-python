@@ -1,0 +1,2 @@
+# Repo-owned mise config, layered over the copier-python template's fragment in conf.d.
+# Add repo-specific tools here, and override `check-extra` or `hooks-extra` to add checks.

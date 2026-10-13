@@ -1,0 +1,2 @@
+# Owned by the copier-python template: delays lock-file updates like the shared Renovate preset.
+exclude-newer = "3 days"

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>jmbowman/agentic_development//renovate/default#v0.1.0"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions marked with a `# renovate:` comment in copier.yml.",
+      "managerFilePatterns": ["/^copier\\.yml$/"],
+      "matchStrings": [
+        "default:\\s*(?<currentValue>\\S+)\\s*# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)"
+      ]
+    }
+  ]
+}

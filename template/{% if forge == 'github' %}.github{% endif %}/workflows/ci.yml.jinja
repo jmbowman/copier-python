@@ -1,0 +1,13 @@
+# Repo-owned CI stub: runs the shared check workflow. Renovate keeps the reference current.
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    uses: jmbowman/agentic_development/.github/workflows/check.yml@{{ agentic_development_ref }}

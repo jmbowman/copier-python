@@ -1,0 +1,67 @@
+# Tools and tasks owned by the copier-python template; Renovate keeps these pins current
+# in the template repo. Override only `check-extra` and `hooks-extra`, in .config/mise/config.toml.
+min_version = "2026.7.2"
+
+[env]
+TY_CONFIG_FILE = "{{config_root}}/.config/copier-python/ty.toml"
+
+[tools]
+uv = "0.13.0"
+ruff = "0.17.0"
+ty = "0.0.86"
+prek = "0.5.5"
+"github:EtaCassiopeia/lid-tooling" = { version = "0.3.0", asset_pattern = "lidc-x86_64-unknown-linux-gnu" }
+
+[tasks.setup]
+run = ["mise install", "prek install -c .config/copier-python/prek.toml"]
+
+[tasks.sync]
+run = "uv sync --locked --all-extras --all-groups"
+
+[tasks.lint]
+run = """
+status=0
+ruff check || status=1
+ruff format --check || status=1
+exit $status
+"""
+
+[tasks.typecheck]
+depends = ["sync"]
+run = "ty check"
+
+[tasks.test]
+depends = ["sync"]
+run = "uv run --locked pytest"
+
+[tasks.lid]
+run = "lidc check --only reverse-orphan,coverage,spec-id-format --fail-on warning"
+
+[tasks.conflicts]
+run = """
+status=0
+git grep -nE '^(<<<<<<<|>>>>>>>) ' -- ':/' || status=$?
+case $status in
+  0) echo "conflict markers found" >&2; exit 1 ;;
+  1) exit 0 ;;
+  *) exit "$status" ;;
+esac
+"""
+
+[tasks.check-extra]
+run = "true"
+
+[tasks.hooks-extra]
+run = "true"
+
+[tasks.check]
+depends = ["lint", "typecheck", "test", "lid", "conflicts", "check-extra"]
+
+[tasks.fix]
+run = ["ruff check --fix", "ruff format"]
+
+[tasks.hooks]
+run = "prek run -c .config/copier-python/prek.toml --all-files"
+
+[tasks.exceptions]
+run = "uv run --no-project .config/copier-python/exceptions.py"

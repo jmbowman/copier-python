@@ -1,0 +1,4 @@
+commit-message.md
+.venv/
+__pycache__/
+.pytest_cache/
