@@ -31,5 +31,5 @@ copyright_notice_regex:
 # The agentic_development release this template version's stubs reference.
 agentic_development_ref:
   type: str
-  default: v0.1.1  # renovate: datasource=github-tags depName=jmbowman/agentic_development
+  default: v0.2.0  # renovate: datasource=github-tags depName=jmbowman/agentic_development
   when: false
