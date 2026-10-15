@@ -9,6 +9,7 @@ _skip_if_exists:
   - .config/mise/config.toml
   - docs/arrows/index.yaml
   - .github/workflows/ci.yml
+  - .github/workflows/lock-refresh.yml
   - .github/renovate.json
 
 forge:
@@ -27,6 +28,14 @@ copyright_notice_regex:
   type: str
   help: Regex for a copyright notice every Python file must carry. Leave empty for none.
   default: ""
+
+lock_refresh_app_client_id:
+  type: str
+  help: >-
+    Client ID of the GitHub App that refreshes committed mise lock files on template updates.
+    Leave empty if the repo doesn't commit mise.lock.
+  default: ""
+  when: "{{ forge == 'github' }}"
 
 # The agentic_development release this template version's stubs reference.
 agentic_development_ref:

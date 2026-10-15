@@ -58,6 +58,7 @@ Files rendered into a consumer repo, by owner. Template-owned files live in `.co
 | `.ruff.toml` | repo | Extends the base. Per-file named exceptions live here |
 | `.config/mise/config.toml` | repo | Repo-specific tools and the `check-extra` and `hooks-extra` overrides |
 | `.github/workflows/ci.yml` | repo | A short stub that calls the shared check workflow at a tag (rendered for the `github` forge) |
+| `.github/workflows/lock-refresh.yml` | repo | A short stub that calls the shared lock-refresh workflow at a tag, so template updates arrive with a refreshed `mise.lock` (rendered for the `github` forge when the repo gives its lock-refresh App's client ID) |
 | `.github/renovate.json` | repo | Extends the shared preset at a tag (rendered for the `github` forge) |
 | `docs/arrows/index.yaml` | repo | The minimal file `lidc` requires |
 

@@ -18,7 +18,8 @@ The repo already has:
 ## Onboarding an existing repo
 
 1. Check for files the template would shadow or skip, and move their content first: an existing
-   `.ruff.toml`, `.config/mise/config.toml`, `.github/workflows/ci.yml` or `.github/renovate.json`;
+   `.ruff.toml`, `.config/mise/config.toml`, `.github/workflows/ci.yml`,
+   `.github/workflows/lock-refresh.yml` or `.github/renovate.json`;
    a root `ruff.toml` or `[tool.ruff]` table; a root `mise.toml`; a root `renovate.json` or
    `.renovaterc*`; `[tool.ty]` and `[tool.uv]` tables; a `.pre-commit-config.yaml`.
 2. Render from a release tag, never an untagged commit:
@@ -28,9 +29,19 @@ The repo already has:
    finding as a named exception: `ruff check --add-noqa`, an entry in `.ruff.toml`'s
    `[lint.extend-per-file-ignores]` table, or `mise exec -- ty check --add-ignore`.
    `mise run exceptions` lists them all.
-5. Run `mise run check` until it passes, then commit everything as one onboarding commit.
-6. In the repo's GitHub settings, enable "Allow auto-merge" and add a branch rule on the default
+5. Optionally, but recommended: run `mise lock` and commit `.config/mise/mise.lock` and any
+   sidecar files under `.config/mise/locks/`, so tools' indirect dependencies change only through
+   a PR that CI tests.
+6. Run `mise run check` until it passes, then commit everything as one onboarding commit.
+7. In the repo's GitHub settings, enable "Allow auto-merge" and add a branch rule on the default
    branch that requires the CI check, so Renovate's update PRs merge only after CI passes.
+8. If the repo commits `mise.lock`, template updates need their lock files refreshed:
+   - install a GitHub App on the repo with the repository permission Contents: read and write
+     (and nothing else);
+   - add its private key as the repository secret `LOCK_REFRESH_APP_PRIVATE_KEY`;
+   - give its client ID as the `lock_refresh_app_client_id` answer, at render time or later with
+     `copier update --data lock_refresh_app_client_id=<client ID>`, which adds the
+     `.github/workflows/lock-refresh.yml` stub.
 
 ## Setting up a fresh clone
 

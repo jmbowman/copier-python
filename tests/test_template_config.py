@@ -10,12 +10,13 @@ from importlib.metadata import version
 
 from tests.support import COPIER_YML, REPO_ROOT, TEMPLATE_DIR, copier_config
 
-QUESTIONS = ("forge", "line_length", "copyright_notice_regex")
+QUESTIONS = ("forge", "line_length", "copyright_notice_regex", "lock_refresh_app_client_id")
 REPO_OWNED = {
     ".ruff.toml",
     ".config/mise/config.toml",
     "docs/arrows/index.yaml",
     ".github/workflows/ci.yml",
+    ".github/workflows/lock-refresh.yml",
     ".github/renovate.json",
 }
 
@@ -140,7 +141,7 @@ def test_copyright_notice_regex_question() -> None:
 
 # @spec FILES-Q-004
 def test_no_other_questions() -> None:
-    """Only the three documented questions are asked."""
+    """Only the documented questions are asked."""
     assert set(_asked()) == set(QUESTIONS)
 
 
@@ -164,3 +165,12 @@ def test_own_ruff_profile_matches_the_template() -> None:
 def test_min_copier_version_is_set() -> None:
     """`_min_copier_version` names a release, which the network tests render with."""
     assert re.fullmatch(r"\d+\.\d+\.\d+", str(copier_config()["_min_copier_version"]))
+
+
+# @spec FILES-Q-005
+def test_lock_refresh_app_client_id_question() -> None:
+    """The App's client ID is an optional string, asked only for the GitHub forge."""
+    question = _questions()["lock_refresh_app_client_id"]
+    assert question["type"] == "str"
+    assert question["default"] == ""
+    assert question["when"] == "{{ forge == 'github' }}"

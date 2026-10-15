@@ -152,3 +152,13 @@ def test_deleted_repo_owned_file_is_recreated(tmp_path: Path) -> None:
     fresh = render(template, tmp_path / "fresh", ref="v1.1.0")
     assert (consumer / ".ruff.toml").read_text() == (fresh / ".ruff.toml").read_text()
     assert "# Changed in v1.1.0." in (consumer / ".ruff.toml").read_text()
+
+
+# @spec FILES-UPD-009
+def test_answering_the_client_id_later_renders_the_stub(tmp_path: Path) -> None:
+    """A consumer that opts in after its first render gets the stub on update."""
+    _template, consumer = _setup(tmp_path)
+    assert not (consumer / ".github/workflows/lock-refresh.yml").exists()
+    update(consumer, "v1.0.0", data={"lock_refresh_app_client_id": "Iv23liLater"})
+    stub = (consumer / ".github/workflows/lock-refresh.yml").read_text()
+    assert "client-id: Iv23liLater" in stub

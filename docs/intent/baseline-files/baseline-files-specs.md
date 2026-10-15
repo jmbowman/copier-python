@@ -8,7 +8,7 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-002**: The copier-python template shall define no copier tasks, migrations or Jinja extensions, so that `copier copy` and `copier update` succeed without `--trust`.
 - [x] **FILES-003**: The copier-python template's rendering and update tests shall run on the copier version given by `_min_copier_version`.
 - [x] **FILES-004**: The copier-python template's rendering and update tests shall run on the copier version recorded in this repo's `uv.lock`.
-- [x] **FILES-005**: The copier-python template's `_skip_if_exists` shall list `.ruff.toml`, `.config/mise/config.toml` and `docs/arrows/index.yaml`, and, where `forge` is `github`, `.github/workflows/ci.yml` and `.github/renovate.json`, and no other path.
+- [x] **FILES-005**: The copier-python template's `_skip_if_exists` shall list `.ruff.toml`, `.config/mise/config.toml` and `docs/arrows/index.yaml`, and, where `forge` is `github`, `.github/workflows/ci.yml`, `.github/workflows/lock-refresh.yml` and `.github/renovate.json`, and no other path.
 - [x] **FILES-006**: The copier-python template shall store `template/.config/copier-python/mise.toml` without the `.jinja` suffix, so that copier copies it verbatim.
 - [x] **FILES-007**: The copier-python template shall define `agentic_development_ref` as a constant (a question with `when: false`) holding an agentic_development release tag.
 - [x] **FILES-009**: No file under the copier-python repo's `template/` directory shall contain an `@spec` annotation.
@@ -19,7 +19,8 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-Q-001**: The copier-python template shall ask `forge`, a choice with the single value `github`, defaulting to `github`.
 - [x] **FILES-Q-002**: The copier-python template shall ask `line_length`, an integer defaulting to `100`.
 - [x] **FILES-Q-003**: The copier-python template shall ask `copyright_notice_regex`, a string defaulting to empty.
-- [x] **FILES-Q-004**: The copier-python template shall ask no question other than `forge`, `line_length` and `copyright_notice_regex`.
+- [x] **FILES-Q-004**: The copier-python template shall ask no question other than `forge`, `line_length`, `copyright_notice_regex` and `lock_refresh_app_client_id`.
+- [x] **FILES-Q-005**: Where `forge` is `github`, the copier-python template shall ask `lock_refresh_app_client_id`, a string defaulting to empty.
 
 ## Rendered layout
 
@@ -28,6 +29,7 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-LAYOUT-003**: When the copier-python template is rendered, it shall create `uv.toml` in the consumer's root as a symlink to `.config/copier-python/uv.toml`.
 - [x] **FILES-LAYOUT-004**: When the copier-python template is rendered into an empty directory, the only regular files or symlinks it writes directly in that directory shall be `.copier-answers.python.yml`, `.ruff.toml` and the `uv.toml` symlink.
 - [x] **FILES-LAYOUT-005**: Where `forge` is `github`, the copier-python template shall render `.github/workflows/ci.yml` and `.github/renovate.json`.
+- [x] **FILES-LAYOUT-006**: Where `forge` is `github` and `lock_refresh_app_client_id` is not empty, the copier-python template shall render `.github/workflows/lock-refresh.yml`; otherwise, it shall not render that file.
 
 ## Rendered content
 
@@ -37,6 +39,8 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-CONTENT-004**: The `docs/arrows/index.yaml` rendered by the copier-python template shall parse as YAML equal to `schema_version: 2` with an empty `arrows` map.
 - [x] **FILES-CONTENT-005**: Where `forge` is `github`, the `.github/workflows/ci.yml` rendered by the copier-python template shall trigger only on `push` with `branches: ["**"]`, and its single job shall call `jmbowman/agentic_development/.github/workflows/check.yml@<agentic_development_ref>` with no `with` inputs.
 - [x] **FILES-CONTENT-006**: Where `forge` is `github`, the `.github/renovate.json` rendered by the copier-python template shall parse as JSON equal to an object whose only key, `extends`, lists `github>jmbowman/agentic_development//renovate/default#<agentic_development_ref>`.
+- [x] **FILES-CONTENT-008**: Where `.github/workflows/lock-refresh.yml` is rendered, it shall trigger only on `pull_request` with `paths: [".copier-answers.*.yml"]`, request only `contents: read`, and have a single job that calls `jmbowman/agentic_development/.github/workflows/lock-refresh.yml` at the value of `agentic_development_ref`, with `client-id` set to the `lock_refresh_app_client_id` answer and the secret `app-private-key` set to the literal expression `${{ secrets.LOCK_REFRESH_APP_PRIVATE_KEY }}`.
+- [x] **FILES-CONTENT-009**: The `with` and `secrets` keys of the rendered `.github/workflows/lock-refresh.yml` job shall equal the inputs and secrets that `.github/workflows/lock-refresh.yml` in jmbowman/agentic_development declares at the value of `agentic_development_ref`, as read by a network-marked test.
 - [x] **FILES-CONTENT-007**: When a consumer is rendered with `copier copy --vcs-ref <tag> <source>`, the `.copier-answers.python.yml` written by the copier-python template shall record `<source>` as `_src_path` and `<tag>` as `_commit`.
 
 ## Rendering a sample project
@@ -53,7 +57,9 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-UPD-005**: When a consumer is updated to a newer template tag, `copier update` shall keep every symlink the copier-python template renders as a symlink with the same target.
 - [x] **FILES-UPD-006**: If a consumer's edit to a template-owned file overlaps a change in the newer template tag, then `copier update` shall leave inline conflict markers in that file, and the consumer's `mise run conflicts` shall fail.
 - [x] **FILES-UPD-007**: When a copy of the sample project, rendered from one test-created template tag, is updated to a later synthetic tag with `copier update --skip-answered --defaults` (the command Renovate runs), its `mise run check` shall still exit 0.
+- [x] **FILES-UPD-009**: When a consumer rendered with an empty `lock_refresh_app_client_id` is updated to the same template tag with `copier update --data lock_refresh_app_client_id=<client ID>`, `copier update` shall render `.github/workflows/lock-refresh.yml` with that client ID.
 
 ## Documentation
 
 - [x] **FILES-DOC-001**: The copier-python template's README shall have a section for each of: preconditions; onboarding (checking for shadowed files, rendering from a tag, trust and setup, fixing or recording findings, committing, and enabling "Allow auto-merge" with a branch rule requiring the CI check); and setting up a fresh clone.
+- [x] **FILES-DOC-002**: The copier-python template's README onboarding section shall describe locking tools with `mise lock`, and, for a repo that commits `mise.lock`, installing a GitHub App with the repository permission Contents: read and write, adding its private key as the secret `LOCK_REFRESH_APP_PRIVATE_KEY`, and answering `lock_refresh_app_client_id`, including later with `copier update --data lock_refresh_app_client_id=<client ID>`.

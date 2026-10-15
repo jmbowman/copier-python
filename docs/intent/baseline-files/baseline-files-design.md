@@ -39,6 +39,7 @@ The template adds tooling around an existing Python project. It doesn't create o
 | `forge` | choice: `github` | `github` | Selects the forge-specific files: the CI stub and the preset reference prefix. Only GitHub exists today, and the question is in place so another forge can be added as a new choice |
 | `line_length` | int | `100` | ruff's `line-length`, used by both the formatter and `E501` |
 | `copyright_notice_regex` | str | empty | When set, enables ruff's copyright-notice rule (`CPY001`) with this pattern. When empty, the rule is off. Some projects require a notice in every file and some carry none |
+| `lock_refresh_app_client_id` | str (asked only when `forge` is `github`) | empty | The client ID of the repo's lock-refresh GitHub App. When set (and `forge` is `github`), the template renders the lock-refresh stub with it. When empty, no stub is rendered, so a repo that doesn't commit `mise.lock` needs no App. The ID isn't sensitive; the App's private key is a repository secret |
 
 These are the only questions. Everything else is discovered rather than asked: ruff, ty and uv read the Python version from `requires-python`, and ruff and ty find source and test files themselves. A question added in a later release must have a default that leaves existing repos passing, because Renovate's update accepts defaults without asking.
 
@@ -60,17 +61,18 @@ These are the only questions. Everything else is discovered rather than asked: r
 | `.config/mise/config.toml` | repo | Starts with a comment: repo-specific tools and overrides of the `*-extra` tasks go here. It takes precedence over `conf.d` fragments |
 | `.ruff.toml` | repo | `extend = ".config/copier-python/ruff.toml"` plus an empty `[lint.extend-per-file-ignores]` table. ruff looks only in the project root and its parents, so the repo's ruff file stays at the root, hidden |
 | `.github/workflows/ci.yml` (when `forge` is `github`) | repo | Runs on every push to any branch and calls `jmbowman/agentic_development/.github/workflows/check.yml` with no inputs |
+| `.github/workflows/lock-refresh.yml` (when `forge` is `github` and `lock_refresh_app_client_id` is set) | repo | On pull requests that change a copier answers file, calls `jmbowman/agentic_development/.github/workflows/lock-refresh.yml` with the App's client ID and the `LOCK_REFRESH_APP_PRIVATE_KEY` secret, so template updates arrive with a refreshed `mise.lock` ([agentic_development lock-refresh LLD](https://github.com/jmbowman/agentic_development/blob/main/docs/intent/lock-refresh/lock-refresh-design.md)). Its GitHub expressions are wrapped in `{% raw %}`, so copier doesn't read them as Jinja. It needs an agentic_development release that includes the lock-refresh workflow, so the template adds it only once `agentic_development_ref` names such a release |
 | `.github/renovate.json` (when `forge` is `github`) | repo | Extends `github>jmbowman/agentic_development//renovate/default`. Renovate reads its config from `.github/` as well as the root |
 | `docs/arrows/index.yaml` | repo | `schema_version: 2` and an empty `arrows` map, the minimum `lidc` accepts. A repo that adopts LID's arrow overlay replaces it |
 
 The CI stub triggers on `push` to every branch and on nothing else. Renovate's update PRs come from branches in the same repo, so the push run is the check that the default branch's rule requires before automerge. Pull requests from forks get no CI run from a push trigger. See Deferred.
 
-The two stubs reference the agentic_development release in `agentic_development_ref`, the one that was current when this template version was released. The CI stub names it by tag at first; Renovate's digest pinning replaces the tag with its commit SHA in the first update PR, so a consumer's first CI runs use the tag. After the first render, Renovate's github-actions and renovate-config managers bump the references, and the github-actions one pins the workflow by digest with the tag as a comment.
+The stubs reference the agentic_development release in `agentic_development_ref`, the one that was current when this template version was released. The CI stub names it by tag at first; Renovate's digest pinning replaces the tag with its commit SHA in the first update PR, so a consumer's first CI runs use the tag. After the first render, Renovate's github-actions and renovate-config managers bump the references, and the github-actions one pins the workflow by digest with the tag as a comment.
 
 ## Onboarding an existing repo
 
 1. **Check for files the template would shadow or skip, and migrate their content first:**
-   - an existing `.ruff.toml`, `.config/mise/config.toml`, `.github/workflows/ci.yml` or `.github/renovate.json` (kept as-is by `_skip_if_exists`, so it never gets the `extend` line, the stub or the preset);
+   - an existing `.ruff.toml`, `.config/mise/config.toml`, `.github/workflows/ci.yml`, `.github/workflows/lock-refresh.yml` or `.github/renovate.json` (kept as-is by `_skip_if_exists`, so it never gets the `extend` line, the stubs or the preset);
    - a root `ruff.toml` or a `[tool.ruff]` table (ruff uses the first config file it finds in a directory, so these compete with `.ruff.toml`);
    - a root `mise.toml` (it outranks `.config/mise/config.toml`; move its content there);
    - a root `renovate.json` or `.renovaterc*` (Renovate uses the first config file it finds);
@@ -82,8 +84,9 @@ The two stubs reference the agentic_development release in `agentic_development_
 4. **Fix:** `mise run fix` applies ruff's automatic fixes and formatting. Then fix the remaining findings, or record each as a named exception:
    - ruff: `ruff check --add-noqa`, or an entry in `.ruff.toml`'s per-file table for whole-file cases;
    - ty: `mise exec -- ty check --add-ignore`, so ty runs with the template's config.
-5. **Commit:** run `mise run check` until it passes, then commit everything as one onboarding commit.
-6. **Forge settings:** enable "Allow auto-merge", and add a branch rule on the default branch that requires the CI check, so Renovate's update PRs merge only after CI passes.
+5. **Lock (optional, recommended):** run `mise lock` and commit `.config/mise/mise.lock` and any sidecars under `.config/mise/locks/`, so indirect dependencies change only through a PR that CI tests.
+6. **Commit:** run `mise run check` until it passes, then commit everything as one onboarding commit.
+7. **Forge settings:** enable "Allow auto-merge", and add a branch rule on the default branch that requires the CI check, so Renovate's update PRs merge only after CI passes. If the repo commits `mise.lock`, install the lock-refresh GitHub App on it (repository permission Contents: read and write), add its private key as the secret `LOCK_REFRESH_APP_PRIVATE_KEY`, and answer `lock_refresh_app_client_id` (at render time, or later with `copier update --data lock_refresh_app_client_id=<client ID>`, which renders the stub because it doesn't exist yet).
 
 A fresh clone of an onboarded repo needs only `mise trust` and `mise run setup`.
 
@@ -101,7 +104,7 @@ After an update lands locally, the next `mise run` installs any newly pinned too
 
 ## Testing the template
 
-pytest tests in `tests/` render the template with copier's Python API into temporary directories. Update tests build their own tags: they copy `template/` and `copier.yml` into a temporary git repository, tag a version, apply a scripted change, and tag again, so they run offline. Conflict-marker fixtures are built at run time, never stored at the start of a line, so this repo's own `conflicts` check doesn't trip on them. "A newer template tag" in the specs means a tag the tests create this way. Template files under `template/` carry no `@spec` annotations, because they are rendered into consumers whose own `lid` gate would reject IDs from another repo; the tests in `tests/` carry the citations. The sample project for rendering tests is a fixture in `tests/fixtures/sample/`, written to pass the strict profile. Tests that need the network (installing tools or packages, running `mise run check` in a rendered project, or reading the shared check workflow at `agentic_development_ref`) are marked `network`. CI runs them all, and a local run can deselect them.
+pytest tests in `tests/` render the template with copier's Python API into temporary directories. Update tests build their own tags: they copy `template/` and `copier.yml` into a temporary git repository, tag a version, apply a scripted change, and tag again, so they run offline. Conflict-marker fixtures are built at run time, never stored at the start of a line, so this repo's own `conflicts` check doesn't trip on them. "A newer template tag" in the specs means a tag the tests create this way. Template files under `template/` carry no `@spec` annotations, because they are rendered into consumers whose own `lid` gate would reject IDs from another repo; the tests in `tests/` carry the citations. The sample project for rendering tests is a fixture in `tests/fixtures/sample/`, written to pass the strict profile. Tests that need the network (installing tools or packages, running `mise run check` in a rendered project, or reading the shared check and lock-refresh workflows at `agentic_development_ref`) are marked `network`. CI runs them all, and a local run can deselect them.
 
 ## Decisions & Alternatives
 
@@ -115,7 +118,7 @@ pytest tests in `tests/` render the template with copier's Python API into tempo
 | Lock-file supply-chain delay | Template-owned `uv.toml` (linked at the root) with `exclude-newer = "3 days"` | `[tool.uv]` in `pyproject.toml`; no delay for lock files | The template doesn't edit `pyproject.toml`. uv records the setting as a span (`exclude-newer-span = "P3D"`), so `uv sync --locked` stays valid as time passes (verified with uv 0.11.24) |
 | `docs/arrows/index.yaml` | Repo-owned minimal stub | Not rendered; template-owned | `lidc` refuses to run without it. The repo owns it because a real arrow overlay replaces its content |
 | `pyproject.toml` | Never rendered or edited | Render tool sections into it | Project metadata belongs to the repo. A partially template-owned file would conflict on every update |
-| Questions | Three (forge, line length, copyright regex) | Python version, source paths, toggles per tool | Each question is a knob a future release must keep compatible. Tools already discover the Python version and paths. Line length and the copyright notice are genuine per-repo conventions, and the forge isolates the GitHub-specific files |
+| Questions | Four (forge, line length, copyright regex, lock-refresh App client ID) | Python version, source paths, toggles per tool | Each question is a knob a future release must keep compatible. Tools already discover the Python version and paths. Line length and the copyright notice are genuine per-repo conventions, and the forge isolates the GitHub-specific files |
 
 ## Open Questions & Future Decisions
 

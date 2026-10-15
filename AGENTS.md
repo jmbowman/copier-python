@@ -8,6 +8,7 @@ A [copier](https://copier.readthedocs.io) template that renders the Python repo 
 - **LID stop cadence (project policy):** the developer reviews the HLD, LLD, EARS and edge-audit stops. For the **tests stop and the Phase 6 completion sign-off**, this project applies a standing "user override, with warning": the review wave inspects instead. Warn once, then continue to the review wave rather than waiting.
 - **Spec-review findings:** apply fixes that don't change meaning (clarity, coverage gaps, scope wording), loop, and list every applied fix in the stop summary. Anything that chooses between two readings of intent goes to the developer as a numbered fork.
 - **README:** `README.md` is for people deciding whether and how to use this repo, and LID's coherence checks don't cover it. Before handing back a change, re-read it against the change. Correct anything the change made false (paths, commands, setup steps, status, what the repo contains), and add a mention of anything a user now needs to know (a new component, command, requirement or limitation). Internal details stay in `docs/`. The review wave checks this too.
+- **Public content only:** this repo is public. Don't reference private repositories or files in them, and don't name or assume a particular user. Cite public sources, or restate what's needed here.
 - **Subagents** for LID probes and review waves are authorized. Never use the built-in Explore or Plan agents for implementation or review work, because they don't load project rules.
 
 ## LID
