@@ -114,15 +114,17 @@ def render(
     return consumer
 
 
-def update(consumer: Path, ref: str) -> None:
+def update(consumer: Path, ref: str, data: dict[str, Any] | None = None) -> None:
     """Update a committed consumer to `ref` the way Renovate does.
 
     Args:
         consumer: A consumer repo with everything committed.
         ref: The template tag to update to.
+        data: Answers to set, as `copier update --data` does.
     """
     run_update(
         consumer,
+        data=data or {},
         answers_file=ANSWERS_FILE,
         defaults=True,
         skip_answered=True,

@@ -1,0 +1,18 @@
+# Repo-owned stub: on Renovate's template-update PRs, the shared workflow reruns `mise lock` and
+# pushes the refreshed lock files with the repo's lock-refresh GitHub App.
+name: lock-refresh
+
+on:
+  pull_request:
+    paths: [".copier-answers.*.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  lock-refresh:
+    uses: jmbowman/agentic_development/.github/workflows/lock-refresh.yml@{{ agentic_development_ref }}
+    with:
+      client-id: {{ lock_refresh_app_client_id }}
+    secrets:
+      app-private-key: {% raw %}${{ secrets.LOCK_REFRESH_APP_PRIVATE_KEY }}{% endraw %}

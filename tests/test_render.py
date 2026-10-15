@@ -314,3 +314,41 @@ def test_hooks(consumer: Path) -> None:
     for hook in hooks:
         assert hook["language"] == "system"
         assert hook["pass_filenames"] is False
+
+
+CLIENT_ID = "Iv23liExampleClient"
+
+
+def _lock_refresh_stub(consumer: Path) -> dict[str, Any]:
+    return yaml.safe_load((consumer / ".github/workflows/lock-refresh.yml").read_text())
+
+
+# @spec FILES-LAYOUT-006
+def test_lock_refresh_stub_only_with_a_client_id(
+    template: Path, consumer: Path, tmp_path: Path
+) -> None:
+    """Without an App client ID there's no stub; with one, the stub is rendered."""
+    assert not (consumer / ".github/workflows/lock-refresh.yml").exists()
+    with_app = render(
+        template, tmp_path / "with-app", data={"lock_refresh_app_client_id": CLIENT_ID}
+    )
+    assert (with_app / ".github/workflows/lock-refresh.yml").is_file()
+
+
+# @spec FILES-CONTENT-008
+def test_lock_refresh_stub(template: Path, tmp_path: Path) -> None:
+    """The stub runs on answers-file changes and passes the client ID and the key secret."""
+    consumer = render(
+        template, tmp_path / "consumer", data={"lock_refresh_app_client_id": CLIENT_ID}
+    )
+    stub = _lock_refresh_stub(consumer)
+    triggers = stub.get("on", stub.get(True))
+    assert triggers == {"pull_request": {"paths": [".copier-answers.*.yml"]}}
+    assert stub["permissions"] == {"contents": "read"}
+    jobs = list(stub["jobs"].values())
+    assert len(jobs) == 1
+    assert jobs[0]["uses"] == (
+        f"jmbowman/agentic_development/.github/workflows/lock-refresh.yml@{_ref()}"
+    )
+    assert jobs[0]["with"] == {"client-id": CLIENT_ID}
+    assert jobs[0]["secrets"] == {"app-private-key": "${{ secrets.LOCK_REFRESH_APP_PRIVATE_KEY }}"}

@@ -323,3 +323,23 @@ def test_blanket_ty_ignore_fails_typecheck(template: Path, tmp_path: Path) -> No
     code, output = _mise(consumer, "run", "typecheck")
     assert code != 0
     assert "blanket-ignore-comment" in output
+
+
+# @spec FILES-CONTENT-009
+def test_lock_refresh_stub_matches_the_shared_workflow(template: Path, tmp_path: Path) -> None:
+    """The stub passes exactly the inputs and secrets the referenced workflow declares."""
+    ref = str(copier_config()["agentic_development_ref"]["default"])
+    url = (
+        "https://raw.githubusercontent.com/jmbowman/agentic_development/"
+        f"{ref}/.github/workflows/lock-refresh.yml"
+    )
+    with urllib.request.urlopen(url, timeout=30) as response:  # noqa: S310
+        workflow = yaml.safe_load(response.read())
+    call = workflow.get("on", workflow.get(True))["workflow_call"]
+    consumer = render(
+        template, tmp_path / "consumer", data={"lock_refresh_app_client_id": "Iv23liX"}
+    )
+    stub = yaml.safe_load((consumer / ".github/workflows/lock-refresh.yml").read_text())
+    job = next(iter(stub["jobs"].values()))
+    assert set(job["with"]) == set(call.get("inputs", {}))
+    assert set(job["secrets"]) == set(call.get("secrets", {}))

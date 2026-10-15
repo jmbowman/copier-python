@@ -44,3 +44,19 @@ def test_readme_documents_preconditions_onboarding_and_fresh_clones() -> None:
     for topic in ONBOARDING_TOPICS:
         assert topic in onboarding, topic
     assert "mise run setup" in section("fresh clone")
+
+
+LOCK_REFRESH_TOPICS = (
+    "mise lock",
+    "Contents: read and write",
+    "LOCK_REFRESH_APP_PRIVATE_KEY",
+    "copier update --data lock_refresh_app_client_id=",
+)
+
+
+# @spec FILES-DOC-002
+def test_readme_documents_lock_files_and_the_lock_refresh_app() -> None:
+    """Onboarding covers committing lock files and setting up the lock-refresh App."""
+    onboarding = next(body for heading, body in _sections().items() if "onboarding" in heading)
+    for topic in LOCK_REFRESH_TOPICS:
+        assert topic in onboarding, topic
