@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>jmbowman/agentic_development//renovate/default#v0.1.1"],
+  "extends": ["github>jmbowman/agentic_development//renovate/default#v0.2.0"],
   "customManagers": [
     {
       "customType": "regex",
