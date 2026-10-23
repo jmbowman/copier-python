@@ -3,8 +3,8 @@
 A [copier](https://copier.readthedocs.io) template that adds a strict Python baseline to a repo:
 ruff with every rule on, ty with every rule as an error, prek commit hooks, mise tasks, a CI stub
 calling the shared [agentic_development](https://github.com/jmbowman/agentic_development) check
-workflow, and a Renovate config that keeps all of it current. Template-owned files live in
-`.config/copier-python/`; the design is in `docs/`.
+workflow, a Renovate config that keeps all of it current, and agent skills from agentic_development.
+Template-owned files live in `.config/copier-python/`; the design is in `docs/`.
 
 ## Preconditions
 
@@ -22,6 +22,9 @@ The repo already has:
    `.github/workflows/lock-refresh.yml` or `.github/renovate.json`;
    a root `ruff.toml` or `[tool.ruff]` table; a root `mise.toml`; a root `renovate.json` or
    `.renovaterc*`; `[tool.ty]` and `[tool.uv]` tables; a `.pre-commit-config.yaml`.
+   For skills: a `.claude/skills` or `.agents/skills` that is a link rather than a directory
+   (replace it with a real directory holding the same skills), and a skill with the same name as
+   one of the template's (remove the repo's copy, and the package that deploys it).
 2. Render from a release tag, never an untagged commit:
    `copier copy --vcs-ref vX.Y.Z https://github.com/jmbowman/copier-python.git .`
 3. Run `mise trust`, then `mise run setup` to install the tools and the git hook.
@@ -43,6 +46,29 @@ The repo already has:
      `copier update --data lock_refresh_app_client_id=<client ID>`, which adds the
      `.github/workflows/lock-refresh.yml` stub.
 
+## Skills
+
+The template delivers the skills in agentic_development's skills package (such as
+`prior-art-search`). Their files are rendered into `.config/copier-python/.claude/skills/`, with a
+link to each from `.claude/skills/`, where Claude Code reads skills, and from `.agents/skills/`,
+where other agents do. Both are committed, so cloud sessions get the skills too. Skill updates
+arrive with template updates.
+
+A repo can add skills of its own beside the template's:
+
+- a skill developed in the repo lives in `skills/<name>/`, with links to it from
+  `.claude/skills/<name>` and `.agents/skills/<name>`;
+- skills from other packages: add a root `apm.yml` with `targets: [claude]`, add `apm` to
+  `.config/mise/config.toml`, run `apm install`, and commit what it deploys. Link a deployed
+  skill from `.agents/skills/<name>` (to `../../.claude/skills/<name>`) for other agents to see
+  it.
+
+The template's skill names are reserved: a repo's own skills mustn't reuse one.
+
+copier never deletes a symlink, so a template release that removes or renames a skill leaves
+its old links pointing nowhere. The `skill-links` check then fails the update PR; delete the
+links it names and push.
+
 ## Setting up a fresh clone
 
 Run `mise trust`, then `mise run setup`.
@@ -52,7 +78,8 @@ Run `mise trust`, then `mise run setup`.
 Renovate opens a PR for each template release and runs `copier update`. Template-owned files are
 re-rendered; repo-owned files (`.ruff.toml`, `.config/mise/config.toml`, the `.github/` stubs,
 `docs/arrows/index.yaml`) stay as the repo left them. Add checks by overriding `check-extra` or
-`hooks-extra` in `.config/mise/config.toml`; don't edit files under `.config/copier-python/`.
+`hooks-extra` in `.config/mise/config.toml`; don't edit files under `.config/copier-python/` or
+the template's skill links.
 
 ## License
 

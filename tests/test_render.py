@@ -292,7 +292,9 @@ def test_extra_tasks_do_nothing(consumer: Path) -> None:
 def test_check_aggregates_the_checks(consumer: Path) -> None:
     """`check` depends on every check and runs nothing itself."""
     check = fragment_tasks(consumer)["check"]
-    assert set(check["depends"]) == {"lint", "typecheck", "test", "lid", "conflicts", "check-extra"}
+    assert set(check["depends"]) == {
+        "lint", "typecheck", "test", "lid", "conflicts", "skill-links", "check-extra"
+    }  # fmt: skip
     assert "run" not in check
 
 

@@ -6,4 +6,5 @@ all = "error"
 respect-type-ignore-comments = false
 
 [src]
-exclude = ["tests/fixtures"]
+# The template's skills are checked in the skills package's own repo.
+exclude = ["tests/fixtures", "template/.config/copier-python/.claude"]

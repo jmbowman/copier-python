@@ -31,9 +31,10 @@ Renovate keeps the pins current in the template repo. `mise run` installs a miss
 | `test` | `uv run --locked pytest`, after `sync` | no (CI and on demand) |
 | `lid` | `lidc check --only reverse-orphan,coverage,spec-id-format --fail-on warning` | yes |
 | `conflicts` | `git grep` over every tracked file in the repo (pathspec `:/`, so it doesn't depend on the current directory) for lines starting `<<<<<<< ` or `>>>>>>> ` | yes |
+| `skill-links` | Fails, naming each, on any entry directly in the repo's `.claude/skills/` or `.agents/skills/` that is a symlink whose target doesn't exist. Passes when neither directory exists | no (CI and on demand) |
 | `check-extra` | nothing (template default) | — |
 | `hooks-extra` | nothing (template default) | yes |
-| `check` | depends on `lint`, `typecheck`, `test`, `lid`, `conflicts` and `check-extra` | — |
+| `check` | depends on `lint`, `typecheck`, `test`, `lid`, `conflicts`, `skill-links` and `check-extra` | — |
 | `fix` | `ruff check --fix` then `ruff format` | — |
 | `hooks` | `prek run -c .config/copier-python/prek.toml --all-files`: every commit-time hook, on demand. prek finds no config by itself, because only the installed git hook records the path | — |
 | `exceptions` | `uv run --no-project .config/copier-python/exceptions.py`: lists every named exception and the total ([strict profile](../strict-profile/strict-profile-design.md#named-exceptions)) | — |
@@ -43,6 +44,8 @@ Renovate keeps the pins current in the template repo. `mise run` installs a miss
 **Exit codes.**
 - `conflicts` passes when `git grep` finds nothing (exit 1), and fails on a match (exit 0) or on an error (exit 2 or more, including running outside a git repository).
 - `exceptions` always exits 0. It reports and doesn't gate.
+
+**Dangling skill links.** copier's update never deletes a symlink, so when a template release removes or renames one of its skills ([baseline files](../baseline-files/baseline-files-design.md#skills)), the skill's files go but its links in `.claude/skills/` and `.agents/skills/` stay, pointing nowhere. `skill-links` fails the Renovate PR that does this, so it doesn't automerge, and a person deletes the links. It catches a repo's own broken skill links the same way.
 
 **Extension.** A repo adds its own checks by redefining `check-extra` or `hooks-extra` in its `.config/mise/config.toml`, which takes precedence over the fragment. Redefining any other template task is a contract violation. For `check`, the shared CI workflow enforces this by verifying where the task is defined.
 
@@ -70,6 +73,7 @@ One local hook per commit-time task, and no others: `lint`, `typecheck`, `lid`, 
 | Repo extension points | Overridable no-op tasks `check-extra` and `hooks-extra` | Repo-owned hook file; editing template files | Repos add checks without touching template-owned files, and every template hook keeps updating |
 | Conflict-marker check | A mise task using `git grep` | A third-party hook | No extra dependency. Only the `<<<<<<<` and `>>>>>>>` forms are checked, because `=======` alone is a valid Markdown heading underline |
 | Tool installation | mise pins | uv dev dependencies for ruff and ty | Tool versions belong to the template, not to each repo's lock file. Renovate bumps them in one place |
+| Dangling skill links | A `skill-links` task in `check`, not run at commit | Accept them as a known limitation; run the task at commit too | A dangling link is a skill no agent can load, and only a template update or a repo's own change creates one. CI on the update PR is where it's caught. Leaving it out of the hooks keeps the hook list to the checks a commit can break in the usual way |
 | Hooks without mise | Fail closed | Skip when mise is missing | A skipped hook is an unchecked commit, and CI would catch it only after the push |
 
 ## Open Questions & Future Decisions

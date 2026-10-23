@@ -23,6 +23,9 @@ SAMPLE = FIXTURES / "sample"
 ANSWERS_FILE = ".copier-answers.python.yml"
 TEMPLATE_DIR_IN_CONSUMER = Path(".config/copier-python")
 FRAGMENT = TEMPLATE_DIR_IN_CONSUMER / "mise.toml"
+# Where the template's skills live, relative to `template/` and to a consumer's root.
+SKILLS = TEMPLATE_DIR_IN_CONSUMER / ".claude" / "skills"
+SKILL_LINK_DIRS = (Path(".claude/skills"), Path(".agents/skills"))
 
 # How mise runs each entry of a task's `run`: POSIX sh with errexit (mise.jdx.dev/tasks/toml-tasks).
 MISE_SHELL = ["sh", "-o", "errexit", "-c"]
@@ -31,6 +34,23 @@ MISE_SHELL = ["sh", "-o", "errexit", "-c"]
 def copier_config() -> dict[str, Any]:
     """Return this repo's parsed `copier.yml`."""
     return yaml.safe_load(COPIER_YML.read_text())
+
+
+def template_skills() -> list[str]:
+    """Return the names of the skills committed in this repo's template."""
+    return sorted(path.name for path in (TEMPLATE_DIR / SKILLS).iterdir() if path.is_dir())
+
+
+def skill_link_target(name: str) -> str:
+    """Return the target of the links to skill `name` in `.claude/skills/` and `.agents/skills/`.
+
+    Args:
+        name: The skill's name.
+
+    Returns:
+        The relative link target.
+    """
+    return f"../../{SKILLS}/{name}"
 
 
 def git(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -76,7 +96,9 @@ def template_repo(dest: Path, tag: str = "v1.0.0") -> Path:
     """
     dest.mkdir(parents=True)
     shutil.copy2(COPIER_YML, dest / "copier.yml")
-    shutil.copytree(TEMPLATE_DIR, dest / "template", symlinks=True)
+    # Leave out local caches: APM's download cache and Python bytecode are never committed.
+    caches = shutil.ignore_patterns("apm_modules", "__pycache__")
+    shutil.copytree(TEMPLATE_DIR, dest / "template", symlinks=True, ignore=caches)
     git(dest, "init", "-q")
     commit_all(dest, "template")
     git(dest, "tag", tag)

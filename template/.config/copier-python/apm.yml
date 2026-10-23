@@ -1,0 +1,10 @@
+# Skills from agentic_development's skills package, rendered into consumers as template files.
+# Renovate bumps the tag and commits what `apm install` redeploys here; copier.yml excludes the
+# APM files. Design: docs/intent/baseline-files/baseline-files-design.md#skills.
+name: copier-python-skills
+version: 0.0.0
+targets:
+  - claude
+dependencies:
+  apm:
+    - jmbowman/agentic_development#v0.3.0
