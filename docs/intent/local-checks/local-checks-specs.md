@@ -19,10 +19,11 @@ Design: [local-checks-design.md](local-checks-design.md). "The copier-python fra
 - [x] **CHECKS-TASK-006**: The copier-python fragment's `lid` task shall run `lidc check --only reverse-orphan,coverage,spec-id-format --fail-on warning`.
 - [x] **CHECKS-TASK-007**: The copier-python fragment's `conflicts` task shall search every git-tracked file in the repository, whatever the current directory (`git grep` with pathspec `:/`), for lines beginning `<<<<<<< ` or `>>>>>>> `, succeed when the search finds nothing (exit 1), and fail when it finds a match (exit 0) or errors (exit 2 or more).
 - [x] **CHECKS-TASK-008**: The copier-python fragment's `check-extra` and `hooks-extra` tasks shall do nothing and succeed.
-- [x] **CHECKS-TASK-009**: The copier-python fragment's `check` task shall depend on `lint`, `typecheck`, `test`, `lid`, `conflicts` and `check-extra`, and run nothing itself.
+- [x] **CHECKS-TASK-009**: The copier-python fragment's `check` task shall depend on `lint`, `typecheck`, `test`, `lid`, `conflicts`, `skill-links` and `check-extra`, and run nothing itself.
 - [x] **CHECKS-TASK-010**: The copier-python fragment's `fix` task shall run `ruff check --fix` and then `ruff format`.
 - [x] **CHECKS-TASK-011**: The copier-python fragment's `hooks` task shall run `prek run -c .config/copier-python/prek.toml --all-files`.
 - [x] **CHECKS-TASK-012**: The copier-python fragment's `exceptions` task shall run `uv run --no-project .config/copier-python/exceptions.py`, which reports named exceptions as specified in `STRICT-EXC-*` and always exits 0.
+- [x] **CHECKS-TASK-015**: If any entry directly in the repository root's `.claude/skills/` or `.agents/skills/`, hidden entries included, is a symlink whose target doesn't exist, then the copier-python fragment's `skill-links` task shall fail and print each such entry's path; otherwise, including when neither directory exists, it shall succeed.
 - [x] **CHECKS-TASK-013**: When a consumer defines `check-extra` in its `.config/mise/config.toml`, `mise run check` shall run the consumer's definition instead of the copier-python fragment's.
 - [x] **CHECKS-TASK-014**: When a consumer defines `hooks-extra` in its `.config/mise/config.toml`, the commit-time hooks shall run the consumer's definition instead of the copier-python fragment's.
 

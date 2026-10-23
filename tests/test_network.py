@@ -16,6 +16,8 @@ import yaml
 from tests.support import (
     FRAGMENT,
     SAMPLE,
+    SKILL_LINK_DIRS,
+    SKILLS,
     commit_all,
     copier_config,
     git,
@@ -23,7 +25,9 @@ from tests.support import (
     load_toml,
     release,
     render,
+    skill_link_target,
     template_repo,
+    template_skills,
     update,
 )
 
@@ -33,6 +37,13 @@ if TYPE_CHECKING:
 pytestmark = [pytest.mark.network, pytest.mark.slow]
 
 HOOK_BUDGET_SECONDS = 10
+# A script nested where a template skill's would be, failing both ruff and ty.
+SKILL_SCRIPT = str(SKILLS / "example/scripts/noncompliant.py")
+NONCOMPLIANT_SCRIPT = 'import os\nVALUE: int = "text"\nprint(os.sep)\n'
+# A small public skill package, pinned, whose skill name differs from the template's.
+OTHER_SKILL_PACKAGE = (
+    "TheQtCompanyRnD/agent-skills/skills/qt-cpp-review#71d6c10da78b9a764468ae11c86ab3bc4ca4921f"
+)
 
 
 def _sample_consumer(template: Path, tmp_path: Path, data: dict[str, Any] | None = None) -> Path:
@@ -270,6 +281,7 @@ def test_test_relaxations_resolve_from_the_root(template: Path, tmp_path: Path) 
 def test_lint_ignores_template_files(template: Path, tmp_path: Path) -> None:
     """Template files under `.config/copier-python/` aren't linted, whatever the answers."""
     consumer = _sample_consumer(template, tmp_path, data={"copyright_notice_regex": "Example Corp"})
+    _write(consumer, {SKILL_SCRIPT: NONCOMPLIANT_SCRIPT})
     _code, output = _mise(consumer, "run", "lint")
     assert "CPY001" in output, "lint must have run and flagged the sample's own files"
     assert ".config/copier-python" not in output
@@ -279,6 +291,7 @@ def test_lint_ignores_template_files(template: Path, tmp_path: Path) -> None:
 def test_typecheck_ignores_template_files(template: Path, tmp_path: Path) -> None:
     """Template files under `.config/copier-python/` aren't type-checked."""
     consumer = _sample_consumer(template, tmp_path)
+    _write(consumer, {SKILL_SCRIPT: NONCOMPLIANT_SCRIPT})
     code, output = _mise(consumer, "run", "typecheck")
     assert code == 0, output
     assert ".config/copier-python" not in output
@@ -343,3 +356,40 @@ def test_lock_refresh_stub_matches_the_shared_workflow(template: Path, tmp_path:
     job = next(iter(stub["jobs"].values()))
     assert set(job["with"]) == set(call.get("inputs", {}))
     assert set(job["secrets"]) == set(call.get("secrets", {}))
+
+
+def _apm(consumer: Path, *args: str) -> tuple[int, str]:
+    completed = subprocess.run(  # noqa: S603
+        ["apm", *args],  # noqa: S607
+        cwd=consumer,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return completed.returncode, completed.stdout + completed.stderr
+
+
+# @spec FILES-SKILL-011
+def test_consumer_apm_installs_beside_the_template_skills(template: Path, tmp_path: Path) -> None:
+    """A consumer's own APM package installs and audits cleanly, leaving the template's links."""
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    git(consumer, "init", "-q")
+    render(template, consumer)
+    manifest = {
+        "name": "consumer",
+        "version": "0.0.0",
+        "targets": ["claude"],
+        "dependencies": {"apm": [OTHER_SKILL_PACKAGE]},
+    }
+    (consumer / "apm.yml").write_text(yaml.safe_dump(manifest))
+    commit_all(consumer, "render and add apm.yml")
+
+    for args in (["install"], ["audit", "--ci"]):
+        code, output = _apm(consumer, *args)
+        assert code == 0, output
+    assert (consumer / ".claude/skills/qt-cpp-review/SKILL.md").is_file()
+    for link_dir in SKILL_LINK_DIRS:
+        for name in template_skills():
+            link = consumer / link_dir / name
+            assert str(link.readlink()) == skill_link_target(name), (link_dir, name)

@@ -60,3 +60,28 @@ def test_readme_documents_lock_files_and_the_lock_refresh_app() -> None:
     onboarding = next(body for heading, body in _sections().items() if "onboarding" in heading)
     for topic in LOCK_REFRESH_TOPICS:
         assert topic in onboarding, topic
+
+
+SKILLS_TOPICS = (
+    ".config/copier-python/.claude/skills/",
+    "skills/<name>/",
+    ".claude/skills/",
+    ".agents/skills/",
+    "apm.yml",
+    ".config/mise/config.toml",
+    "reserved",
+)
+SKILLS_ONBOARDING_TOPICS = (".claude/skills", ".agents/skills", "same name")
+
+
+# @spec FILES-DOC-003
+def test_readme_documents_the_skills() -> None:
+    """A skills section covers the template's skills and a repo's own; onboarding checks both."""
+    sections = _sections()
+    skills = [body for heading, body in sections.items() if "skills" in heading]
+    assert len(skills) == 1, list(sections)
+    for topic in SKILLS_TOPICS:
+        assert topic in skills[0], topic
+    onboarding = next(body for heading, body in sections.items() if "onboarding" in heading)
+    for topic in SKILLS_ONBOARDING_TOPICS:
+        assert topic in onboarding, topic

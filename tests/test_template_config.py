@@ -8,7 +8,7 @@ import re
 import tomllib
 from importlib.metadata import version
 
-from tests.support import COPIER_YML, REPO_ROOT, TEMPLATE_DIR, copier_config
+from tests.support import COPIER_YML, REPO_ROOT, TEMPLATE_DIR, copier_config, git
 
 QUESTIONS = ("forge", "line_length", "copyright_notice_regex", "lock_refresh_app_client_id")
 REPO_OWNED = {
@@ -106,11 +106,15 @@ def test_renovate_custom_manager_tracks_agentic_development_ref() -> None:
 def test_template_files_carry_no_spec_annotations() -> None:
     """Rendered files never cite this repo's spec IDs, which consumers don't have."""
     assert TEMPLATE_DIR.is_dir()
+    # Files git ignores (such as APM's download cache) are never committed or rendered.
+    listed = git(REPO_ROOT, "ls-files", "--cached", "--others", "--exclude-standard", "template")
+    paths = [REPO_ROOT / name for name in listed.stdout.splitlines()]
     offenders = [
         path.relative_to(REPO_ROOT)
-        for path in TEMPLATE_DIR.rglob("*")
+        for path in paths
         if path.is_file() and "@spec" in path.read_text(errors="replace")
     ]
+    assert paths
     assert offenders == []
 
 

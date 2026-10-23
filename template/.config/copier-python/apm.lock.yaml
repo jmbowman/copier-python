@@ -1,0 +1,80 @@
+lockfile_version: '1'
+apm_version: 0.33.0
+dependencies:
+- repo_url: jmbowman/agentic_development
+  name: agentic-development
+  host: github.com
+  resolved_commit: b9242b15b0b6121c20ed0dce5271df81cf3a8147
+  resolved_ref: v0.3.0
+  version: b9242b1
+  package_type: skill_bundle
+  deployed_files:
+  - .claude/skills/prior-art-search
+  - .claude/skills/prior-art-search/LICENSE.txt
+  - .claude/skills/prior-art-search/SKILL.md
+  - .claude/skills/prior-art-search/references/note-template.md
+  - .claude/skills/prior-art-search/references/sources.md
+  - .claude/skills/prior-art-search/references/verification.md
+  deployed_file_hashes:
+    .claude/skills/prior-art-search/LICENSE.txt: sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
+    .claude/skills/prior-art-search/SKILL.md: sha256:20b61fd9d34e4c37c43879883d67c382787f44fcc2fba0ca4751c285f7dc15f5
+    .claude/skills/prior-art-search/references/note-template.md: sha256:33bc154282037d96f9f6e06ae3d4ba906d4347bfe436eb7299606ac571bdcc90
+    .claude/skills/prior-art-search/references/sources.md: sha256:9ff45c37b8dcb19be905ac7deb5a9f99beadd8c1d186a5614ad8096b455deaeb
+    .claude/skills/prior-art-search/references/verification.md: sha256:1656165a51ba87b36415a7ca7ea42a4596480f9eeb2c074a18bcbf233c905950
+  content_hash: sha256:c4e874801bd8ed52bab4fbae98810ac8c837c209df64c3b9c8b689937d79b411
+  declared_license: Apache-2.0
+deployments:
+- kind: project-relative
+  target: claude
+  value: .claude/skills/prior-art-search
+  runtime: null
+  scope: project
+  owners:
+  - jmbowman/agentic_development
+  active_owner: jmbowman/agentic_development
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/prior-art-search/LICENSE.txt
+  runtime: null
+  scope: project
+  owners:
+  - jmbowman/agentic_development
+  active_owner: jmbowman/agentic_development
+  content_hash: sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
+- kind: project-relative
+  target: claude
+  value: .claude/skills/prior-art-search/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - jmbowman/agentic_development
+  active_owner: jmbowman/agentic_development
+  content_hash: sha256:20b61fd9d34e4c37c43879883d67c382787f44fcc2fba0ca4751c285f7dc15f5
+- kind: project-relative
+  target: claude
+  value: .claude/skills/prior-art-search/references/note-template.md
+  runtime: null
+  scope: project
+  owners:
+  - jmbowman/agentic_development
+  active_owner: jmbowman/agentic_development
+  content_hash: sha256:33bc154282037d96f9f6e06ae3d4ba906d4347bfe436eb7299606ac571bdcc90
+- kind: project-relative
+  target: claude
+  value: .claude/skills/prior-art-search/references/sources.md
+  runtime: null
+  scope: project
+  owners:
+  - jmbowman/agentic_development
+  active_owner: jmbowman/agentic_development
+  content_hash: sha256:9ff45c37b8dcb19be905ac7deb5a9f99beadd8c1d186a5614ad8096b455deaeb
+- kind: project-relative
+  target: claude
+  value: .claude/skills/prior-art-search/references/verification.md
+  runtime: null
+  scope: project
+  owners:
+  - jmbowman/agentic_development
+  active_owner: jmbowman/agentic_development
+  content_hash: sha256:1656165a51ba87b36415a7ca7ea42a4596480f9eeb2c074a18bcbf233c905950

@@ -3,6 +3,12 @@
 _subdirectory: template
 _answers_file: .copier-answers.python.yml
 _preserve_symlinks: true
+# What APM keeps beside the skills manifest; consumers get only the deployed skills.
+_exclude:
+  - /.config/copier-python/apm.yml
+  - /.config/copier-python/apm.lock.yaml
+  - /.config/copier-python/apm_modules
+  - /.config/copier-python/.gitignore
 _min_copier_version: "9.6.0"
 _skip_if_exists:
   - .ruff.toml

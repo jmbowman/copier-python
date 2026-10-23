@@ -48,6 +48,20 @@ case $status in
 esac
 """
 
+# copier never deletes a symlink, so a skill a template release removes leaves its links dangling.
+[tasks.skill-links]
+run = """
+status=0
+for link in .claude/skills/* .claude/skills/.[!.]* .claude/skills/..?* \\
+  .agents/skills/* .agents/skills/.[!.]* .agents/skills/..?*; do
+  if [ -L "$link" ] && [ ! -e "$link" ]; then
+    echo "dangling skill link: $link" >&2
+    status=1
+  fi
+done
+exit $status
+"""
+
 [tasks.check-extra]
 run = "true"
 
@@ -55,7 +69,7 @@ run = "true"
 run = "true"
 
 [tasks.check]
-depends = ["lint", "typecheck", "test", "lid", "conflicts", "check-extra"]
+depends = ["lint", "typecheck", "test", "lid", "conflicts", "skill-links", "check-extra"]
 
 [tasks.fix]
 run = ["ruff check --fix", "ruff format"]

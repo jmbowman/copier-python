@@ -11,7 +11,7 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-005**: The copier-python template's `_skip_if_exists` shall list `.ruff.toml`, `.config/mise/config.toml` and `docs/arrows/index.yaml`, and, where `forge` is `github`, `.github/workflows/ci.yml`, `.github/workflows/lock-refresh.yml` and `.github/renovate.json`, and no other path.
 - [x] **FILES-006**: The copier-python template shall store `template/.config/copier-python/mise.toml` without the `.jinja` suffix, so that copier copies it verbatim.
 - [x] **FILES-007**: The copier-python template shall define `agentic_development_ref` as a constant (a question with `when: false`) holding an agentic_development release tag.
-- [x] **FILES-009**: No file under the copier-python repo's `template/` directory shall contain an `@spec` annotation.
+- [x] **FILES-009**: No file under the copier-python repo's `template/` directory that git doesn't ignore shall contain an `@spec` annotation.
 - [x] **FILES-008**: The copier-python repo's own Renovate config shall define a custom regex manager, with datasource `github-tags` and package `jmbowman/agentic_development`, whose pattern matches the `default:` line of `agentic_development_ref` in `copier.yml` and captures its tag.
 
 ## Questions
@@ -43,6 +43,23 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-CONTENT-009**: The `with` and `secrets` keys of the rendered `.github/workflows/lock-refresh.yml` job shall equal the inputs and secrets that `.github/workflows/lock-refresh.yml` in jmbowman/agentic_development declares at the value of `agentic_development_ref`, as read by a network-marked test.
 - [x] **FILES-CONTENT-007**: When a consumer is rendered with `copier copy --vcs-ref <tag> <source>`, the `.copier-answers.python.yml` written by the copier-python template shall record `<source>` as `_src_path` and `<tag>` as `_commit`.
 
+## Skills
+
+"The template's skills" are the directories under `template/.config/copier-python/.claude/skills/` in the copier-python repo. "The skills manifest" is `template/.config/copier-python/apm.yml`.
+
+- [x] **FILES-SKILL-001**: The copier-python template's skills manifest shall set `targets` to `[claude]` and list exactly one APM dependency, `jmbowman/agentic_development#<tag>`, where `<tag>` has the form `vX.Y.Z`.
+- [x] **FILES-SKILL-002**: The files under `template/.config/copier-python/.claude/skills/` in the copier-python repo shall be exactly the files that `template/.config/copier-python/apm.lock.yaml` lists as deployed.
+- [x] **FILES-SKILL-003**: For each of the template's skills, `template/.claude/skills/` and `template/.agents/skills/` in the copier-python repo shall each contain a symlink with the skill's name and the target `../../.config/copier-python/.claude/skills/<name>`, and neither directory shall contain anything else.
+- [x] **FILES-SKILL-004**: The copier-python template's `copier.yml` shall set `_exclude` to exactly `/.config/copier-python/apm.yml`, `/.config/copier-python/apm.lock.yaml`, `/.config/copier-python/apm_modules` and `/.config/copier-python/.gitignore`.
+- [x] **FILES-SKILL-005**: No file under `template/.config/copier-python/.claude/skills/` in the copier-python repo shall have a name ending in `.jinja`.
+- [x] **FILES-SKILL-006**: When the copier-python template is rendered, every file under the template's `.config/copier-python/.claude/skills/` shall be written as a regular file, byte-identical, at the same path under the consumer's `.config/copier-python/.claude/skills/`.
+- [x] **FILES-SKILL-007**: When the copier-python template is rendered, it shall create, for each of the template's skills, `.claude/skills/<name>` and `.agents/skills/<name>` in the consumer as symlinks to `../../.config/copier-python/.claude/skills/<name>`, each resolving to a directory that contains `SKILL.md`.
+- [x] **FILES-SKILL-008**: When the copier-python template is rendered, it shall write no `apm.yml`, `apm.lock.yaml`, `apm_modules` or `.gitignore` anywhere in the consumer.
+- [x] **FILES-SKILL-009**: When the copier-python template is rendered into a directory whose `.claude/skills/` and `.agents/skills/` already hold entries with names other than the template's skills, it shall add the template's links beside them and leave those entries unchanged.
+- [x] **FILES-SKILL-010**: The copier-python repo's own `mise.toml` shall pin an exact `apm` version, and its `check` task shall depend on a `skills` task that runs `apm audit --ci --no-drift` in `template/.config/copier-python/`.
+- [x] **FILES-SKILL-012**: The copier-python repo's own ty config (`.config/ty.toml`) shall exclude `template/.config/copier-python/.claude`.
+- [x] **FILES-SKILL-011**: When a consumer rendered by the copier-python template adds a root `apm.yml` with `targets: [claude]` and one skill package whose skill names differ from the template's, then `apm install` and `apm audit --ci` in that consumer shall exit 0, and every template-rendered skill link shall keep its target, as checked by a network-marked test.
+
 ## Rendering a sample project
 
 - [x] **FILES-RENDER-001**: When the copier-python template is rendered with default answers into a copy of the sample project (a git repository with its files committed, a `pyproject.toml` with `requires-python`, a committed `uv.lock`, pytest in a dependency group, and at least one test, all clean under the strict profile), then `mise trust` followed by `mise run check` in that copy shall exit 0.
@@ -57,9 +74,13 @@ Design: [baseline-files-design.md](baseline-files-design.md). "A consumer" is a 
 - [x] **FILES-UPD-005**: When a consumer is updated to a newer template tag, `copier update` shall keep every symlink the copier-python template renders as a symlink with the same target.
 - [x] **FILES-UPD-006**: If a consumer's edit to a template-owned file overlaps a change in the newer template tag, then `copier update` shall leave inline conflict markers in that file, and the consumer's `mise run conflicts` shall fail.
 - [x] **FILES-UPD-007**: When a copy of the sample project, rendered from one test-created template tag, is updated to a later synthetic tag with `copier update --skip-answered --defaults` (the command Renovate runs), its `mise run check` shall still exit 0.
+- [x] **FILES-UPD-010**: When a consumer whose `.claude/skills/` and `.agents/skills/` also hold its own entries (a skill as real files, and a link to its own `skills/<name>/`) is updated to a newer template tag that changes, adds and deletes files in one of the template's skills, `copier update` shall finish without conflict markers, the consumer's copy of that skill shall match the newer tag's rendering, and the consumer's own entries shall be unchanged.
+- [x] **FILES-UPD-011**: When a consumer is updated to a newer template tag that adds a skill with its two links, `copier update` shall create the skill's files and both links.
+- [x] **FILES-UPD-012**: When a consumer is updated to a newer template tag that removes a skill and its links, `copier update` shall delete the skill's files, and the consumer's `skill-links` task shall then fail until both links are deleted.
 - [x] **FILES-UPD-009**: When a consumer rendered with an empty `lock_refresh_app_client_id` is updated to the same template tag with `copier update --data lock_refresh_app_client_id=<client ID>`, `copier update` shall render `.github/workflows/lock-refresh.yml` with that client ID.
 
 ## Documentation
 
 - [x] **FILES-DOC-001**: The copier-python template's README shall have a section for each of: preconditions; onboarding (checking for shadowed files, rendering from a tag, trust and setup, fixing or recording findings, committing, and enabling "Allow auto-merge" with a branch rule requiring the CI check); and setting up a fresh clone.
 - [x] **FILES-DOC-002**: The copier-python template's README onboarding section shall describe locking tools with `mise lock`, and, for a repo that commits `mise.lock`, installing a GitHub App with the repository permission Contents: read and write, adding its private key as the secret `LOCK_REFRESH_APP_PRIVATE_KEY`, and answering `lock_refresh_app_client_id`, including later with `copier update --data lock_refresh_app_client_id=<client ID>`.
+- [x] **FILES-DOC-003**: The copier-python template's README shall describe the skills the template delivers and where they are rendered, how a consumer adds its own skills (in `skills/<name>/` with links from `.claude/skills/` and `.agents/skills/`, or with its own `apm.yml` and `apm` added to `.config/mise/config.toml`), that the template's skill names are reserved, and, in its onboarding section, the check for a `.claude/skills` or `.agents/skills` that is a link and for a skill named like one of the template's.
