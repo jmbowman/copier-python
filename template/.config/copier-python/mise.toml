@@ -9,7 +9,7 @@ TY_CONFIG_FILE = "{{config_root}}/.config/copier-python/ty.toml"
 uv = "0.13.4"
 ruff = "0.17.1"
 ty = "0.0.90"
-prek = "0.5.6"
+prek = "0.5.7"
 "github:EtaCassiopeia/lid-tooling" = { version = "0.3.0", asset_pattern = "lidc-x86_64-unknown-linux-gnu" }
 
 [tasks.setup]
