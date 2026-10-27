@@ -2,3 +2,10 @@ commit-message.md
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Skills APM installs from apm.lock.yaml (LID's).
+/.claude/skills/
+
+
+# APM dependencies
+apm_modules/
