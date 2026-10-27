@@ -5,7 +5,7 @@ A [copier](https://copier.readthedocs.io) template that renders the Python repo 
 ## Working rules
 
 - **Commits:** agents don't commit. They draft `commit-message.md` (gitignored), and the developer they work for commits with `git commit -F commit-message.md`. One commit per slice that has cleared tests and the review wave.
-- **LID stop cadence (project policy):** the developer reviews the HLD, LLD, EARS and edge-audit stops. For the **tests stop and the Phase 6 completion sign-off**, this project applies a standing "user override, with warning": the review wave inspects instead. Warn once, then continue to the review wave rather than waiting.
+- **LID inspection (project policy):** the developer inspects the HLD, LLD, EARS and edge-audit stops. For the **tests stop and the Phase 6 completion sign-off**, the developer names the review wave as the inspector: the agent continues to the review wave without waiting, and lists its findings and what it applied in the hand-back.
 - **Spec-review findings:** apply fixes that don't change meaning (clarity, coverage gaps, scope wording), loop, and list every applied fix in the stop summary. Anything that chooses between two readings of intent goes to the developer as a numbered fork.
 - **README:** `README.md` is for people deciding whether and how to use this repo, and LID's coherence checks don't cover it. Before handing back a change, re-read it against the change. Correct anything the change made false (paths, commands, setup steps, status, what the repo contains), and add a mention of anything a user now needs to know (a new component, command, requirement or limitation). Internal details stay in `docs/`. The review wave checks this too.
 - **Public content only:** this repo is public. Don't reference private repositories or files in them, and don't name or assume a particular user. Cite public sources, or restate what's needed here.
@@ -13,7 +13,7 @@ A [copier](https://copier.readthedocs.io) template that renders the Python repo 
 
 ## LID
 - Mode: Full
-- Version: 1.3.0
+- Version: 1.4.0
 
 ## Linked-Intent Development (MANDATORY)
 
@@ -23,11 +23,10 @@ A [copier](https://copier.readthedocs.io) template that renders the Python repo 
 HLD → LLDs → EARS → Tests → Code
 ```
 
-- **New features and refactors**: full six-phase workflow (HLD check → LLD check/draft → EARS → intent-narrowing edge audit → tests-first → code).
+- **All changes**: consult the `linked-intent-dev` skill if your harness provides it; otherwise read `docs/lid/workflow.md` before making changes, and if it is missing and `## LID` records no decline, offer the user once to add it from https://raw.githubusercontent.com/jszmajda/lid/v1.4.0/plugins/linked-intent-dev/skills/update-lid/references/workflow-doc.md (on decline, add `- Workflow doc: declined` to `## LID`). The workflow in one line: HLD check → LLD → EARS specs → edge audit → failing tests first → code — inspected at each phase.
 - **Bug fixes**: walk the arrow like any other change — find where behavior diverged from intent and cascade from there. No short-circuit.
-- **If unsure**: use the full workflow.
 
-Stop after each phase for user review. **Docs carry current intent, written to be read cold** — write each doc as if authored fresh today, from current intent alone: no narration of how it changed, no meaning that needs the conversation that produced it, no rebuttals to questions only a past discussion raised. Rationale, considered alternatives, and constraints a fresh author would independently write stay; record rejected alternatives and why in the LLD's Decisions & Alternatives table, not as asides in body prose.
+Each phase's output is inspected — by the user or an inspector they name — before the next begins; ambiguous spec readings go back to the user. **Docs carry current intent, written to be read cold** — write each doc as if authored fresh today, from current intent alone: no narration of how it changed, no meaning that needs the conversation that produced it, no rebuttals to questions only a past discussion raised. Rationale, considered alternatives, and constraints a fresh author would independently write stay; record rejected alternatives and why in the LLD's Decisions & Alternatives table, not as asides in body prose.
 
 **Memory vs. intent.** Before saving durable project knowledge to agent or tool memory, test whether it is project *intent* — would a fresh agent, in any tool, next session, need it to build this system correctly? If yes, record it in the arrow (HLD / LLD / EARS / decision doc), which travels and cascades — not in private, per-tool memory, where intent escapes the arrow. Knowledge about the user or how they like to work stays in memory.
 
@@ -39,6 +38,7 @@ Stop after each phase for user review. **Docs carry current intent, written to b
 | Design tree (sub-HLDs, LLDs, their specs) | `docs/intent/` — one folder per node |
 | EARS specs | beside each design doc as `{node}-specs.md` in the node's folder under `docs/intent/` |
 | Decision docs | `docs/decisions/` (project-level) and `docs/intent/<segment>/decisions/` |
+| Arrow of intent overlay | `docs/arrows/index.yaml` and per-segment docs in `docs/arrows/` |
 
 ### Terminology
 
@@ -58,3 +58,7 @@ Annotate code and tests with `@spec` comments citing EARS IDs:
 ```
 
 Place the annotation at the *entry point of the behavior's implementation graph* — the topmost function or module owning the specified behavior, not every helper. When a behavior spans multiple subsystems (UI + API + database, for example), annotate at the entry point in each subsystem. Tests follow the same rule: annotate the test that directly exercises the spec, not every inner assertion.
+
+## LID Tooling
+
+- **Coherence check**: `mise run lid` — runs `lidc check --only reverse-orphan,coverage,spec-id-format --fail-on warning` ([lid-tooling](https://github.com/EtaCassiopeia/lid-tooling)). Its checks are authoritative; anything it doesn't cover falls back to the in-prompt audit.
