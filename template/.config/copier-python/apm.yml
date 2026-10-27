@@ -7,4 +7,4 @@ targets:
   - claude
 dependencies:
   apm:
-    - jmbowman/agentic_development#v0.3.0
+    - jmbowman/agentic_development#v0.3.1
