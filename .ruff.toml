@@ -18,3 +18,4 @@ convention = "google"
 [lint.per-file-ignores]
 "**/tests/**" = ["S101", "PLR2004"]  # pytest asserts and literal comparisons
 "template/.config/copier-python/exceptions.py" = ["INP001"]  # a standalone script, not a package module
+"template/.config/copier-python/lid_version.py" = ["INP001"]  # a standalone script, not a package module

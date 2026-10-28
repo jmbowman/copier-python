@@ -18,17 +18,20 @@ from tests.support import (
     SAMPLE,
     SKILL_LINK_DIRS,
     SKILLS,
+    SKILLS_LOCK,
     commit_all,
     copier_config,
     git,
     isolated_mise_env,
     load_toml,
+    locked_skills,
     release,
     render,
     skill_link_target,
     template_repo,
     template_skills,
     update,
+    write_lid_instructions,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +56,8 @@ def _sample_consumer(template: Path, tmp_path: Path, data: dict[str, Any] | None
     git(consumer, "init", "-q")
     commit_all(consumer, "sample")
     render(template, consumer, data=data)
+    # Onboarding step 4: the LID block, at the version the template's lock file pins.
+    write_lid_instructions(consumer)
     commit_all(consumer, "render")
     return consumer
 
@@ -384,6 +389,8 @@ def test_consumer_apm_installs_beside_the_template_skills(template: Path, tmp_pa
     }
     (consumer / "apm.yml").write_text(yaml.safe_dump(manifest))
     commit_all(consumer, "render and add apm.yml")
+    code, output = _mise(consumer, "run", "skills")
+    assert code == 0, output
 
     for args in (["install"], ["audit", "--ci"]):
         code, output = _apm(consumer, *args)
@@ -392,4 +399,41 @@ def test_consumer_apm_installs_beside_the_template_skills(template: Path, tmp_pa
     for link_dir in SKILL_LINK_DIRS:
         for name in template_skills():
             link = consumer / link_dir / name
+            assert link.is_symlink(), (link_dir, name)
             assert str(link.readlink()) == skill_link_target(name), (link_dir, name)
+
+
+def _installed_consumer(template: Path, tmp_path: Path) -> Path:
+    """A rendered consumer after a real `mise run skills`."""
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    git(consumer, "init", "-q")
+    render(template, consumer)
+    commit_all(consumer, "render")
+    code, output = _mise(consumer, "run", "skills")
+    assert code == 0, output
+    return consumer
+
+
+# @spec FILES-SKILL-015
+def test_installed_skill_links_resolve(template: Path, tmp_path: Path) -> None:
+    """After a real install, every template link reaches a skill with a SKILL.md."""
+    consumer = _installed_consumer(template, tmp_path)
+    for link_dir in SKILL_LINK_DIRS:
+        for name in template_skills():
+            assert (consumer / link_dir / name / "SKILL.md").is_file(), (link_dir, name)
+
+
+# @spec CHECKS-TASK-017
+def test_skills_task_removes_skills_the_lock_dropped(template: Path, tmp_path: Path) -> None:
+    """A skill left from an earlier install is gone after the next `skills` run."""
+    consumer = _installed_consumer(template, tmp_path)
+    stale = consumer / SKILLS / "dropped-skill"
+    stale.mkdir()
+    (stale / "SKILL.md").write_text("---\nname: dropped-skill\n---\n")
+
+    code, output = _mise(consumer, "run", "skills")
+
+    assert code == 0, output
+    installed = sorted(path.name for path in (consumer / SKILLS).iterdir())
+    assert installed == locked_skills(consumer / SKILLS_LOCK)

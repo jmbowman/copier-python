@@ -26,7 +26,16 @@ from tests.support import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-TEMPLATE_FILES = ("mise.toml", "ruff.toml", "ty.toml", "prek.toml", "uv.toml", "exceptions.py")
+TEMPLATE_FILES = (
+    "mise.toml",
+    "ruff.toml",
+    "ty.toml",
+    "prek.toml",
+    "uv.toml",
+    "exceptions.py",
+    "lid_version.py",
+    "session-start.sh",
+)
 FORMATTER_CONFLICTS = {
     "W191", "E111", "E114", "E117", "D206", "D300",
     "Q000", "Q001", "Q002", "Q003", "Q004", "COM812", "COM819", "ISC002",
@@ -211,9 +220,9 @@ def _tools(consumer: Path) -> dict[str, Any]:
 
 # @spec CHECKS-TOOL-001
 def test_core_tools_pinned_exactly(consumer: Path) -> None:
-    """uv, ruff, ty and prek are pinned to full version numbers."""
+    """uv, ruff, ty, prek and apm are pinned to full version numbers."""
     tools = _tools(consumer)
-    for name in ("uv", "ruff", "ty", "prek"):
+    for name in ("uv", "ruff", "ty", "prek", "apm"):
         assert EXACT_VERSION.fullmatch(str(tools[name])), name
 
 
@@ -245,7 +254,7 @@ def test_ty_config_path_is_absolute(consumer: Path) -> None:
 @pytest.mark.parametrize(
     ("task", "commands"),
     [
-        ("setup", ["mise install", "prek install -c .config/copier-python/prek.toml"]),
+        ("lid-version", ["uv run --no-project .config/copier-python/lid_version.py"]),
         ("sync", ["uv sync --locked --all-extras --all-groups"]),
         ("lint", ["ruff check", "ruff format --check"]),
         ("typecheck", ["ty check"]),
@@ -256,8 +265,8 @@ def test_ty_config_path_is_absolute(consumer: Path) -> None:
         ("exceptions", ["uv run --no-project .config/copier-python/exceptions.py"]),
     ],
 )
-# @spec CHECKS-TASK-001, CHECKS-TASK-002, CHECKS-TASK-003, CHECKS-TASK-004, CHECKS-TASK-005
-# @spec CHECKS-TASK-006, CHECKS-TASK-010, CHECKS-TASK-011, CHECKS-TASK-012
+# @spec CHECKS-TASK-002, CHECKS-TASK-003, CHECKS-TASK-004, CHECKS-TASK-005, CHECKS-TASK-006
+# @spec CHECKS-TASK-010, CHECKS-TASK-011, CHECKS-TASK-012, CHECKS-TASK-019
 def test_task_commands(consumer: Path, task: str, commands: list[str]) -> None:
     """Each task runs its commands as whole commands, in order."""
     found = [
@@ -271,6 +280,33 @@ def test_task_commands(consumer: Path, task: str, commands: list[str]) -> None:
         assert command in found, (task, found)
         positions.append(found.index(command))
     assert positions == sorted(positions), (task, found)
+
+
+# @spec CHECKS-TASK-001
+def test_setup_installs_apm_and_skills_before_other_tools(consumer: Path) -> None:
+    """`setup` runs its steps in the session hook's order, with no dependencies."""
+    setup = fragment_tasks(consumer)["setup"]
+    assert setup["run"] == [
+        "mise install apm",
+        "mise run skills",
+        "mise install",
+        "prek install -c .config/copier-python/prek.toml",
+    ]
+    assert "depends" not in setup
+
+
+# @spec CHECKS-TASK-016
+def test_skills_task_reinstalls_from_the_lock(consumer: Path) -> None:
+    """`skills` clears the installed skills, then installs exactly what the lock records."""
+    skills = fragment_tasks(consumer)["skills"]
+    assert skills["dir"] == "{{config_root}}/.config/copier-python"
+    assert skills["run"] == ["rm -rf .claude", "apm install --frozen"]
+
+
+# @spec CHECKS-TASK-018
+def test_skill_links_installs_skills_first(consumer: Path) -> None:
+    """`skill-links` depends on `skills`, so `check` installs the skills in CI."""
+    assert fragment_tasks(consumer)["skill-links"]["depends"] == ["skills"]
 
 
 # @spec CHECKS-TASK-004, CHECKS-TASK-005
@@ -293,7 +329,8 @@ def test_check_aggregates_the_checks(consumer: Path) -> None:
     """`check` depends on every check and runs nothing itself."""
     check = fragment_tasks(consumer)["check"]
     assert set(check["depends"]) == {
-        "lint", "typecheck", "test", "lid", "conflicts", "skill-links", "check-extra"
+        "lint", "typecheck", "test", "lid", "conflicts", "skill-links", "lid-version",
+        "check-extra",
     }  # fmt: skip
     assert "run" not in check
 

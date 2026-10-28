@@ -9,6 +9,14 @@
       "matchStrings": [
         "default:\\s*(?<currentValue>\\S+)\\s*# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)"
       ]
+    },
+    {
+      "customType": "regex",
+      "description": "The session hook's mise, kept on the same dependency as mise-action's version input so one PR bumps both.",
+      "managerFilePatterns": ["/^template/\\.config/copier-python/session-start\\.sh$/"],
+      "matchStrings": ["(?:^|\\n)MISE_VERSION=(?<currentValue>\\S+)\\n"],
+      "depNameTemplate": "jdx/mise",
+      "datasourceTemplate": "github-release-attachments"
     }
   ]
 }

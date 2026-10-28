@@ -16,7 +16,8 @@ The fragment `.config/copier-python/mise.toml`, loaded through its link in `.con
 - `ruff`;
 - `ty`;
 - `prek`;
-- `lidc`, from the `github:EtaCassiopeia/lid-tooling` backend with an `asset_pattern` that selects the `lidc` binary.
+- `lidc`, from the `github:EtaCassiopeia/lid-tooling` backend with an `asset_pattern` that selects the `lidc` binary;
+- `apm`, which installs the template's skills ([baseline files](../baseline-files/baseline-files-design.md#skills)).
 
 Renovate keeps the pins current in the template repo. `mise run` installs a missing pinned tool automatically before running a task (verified with mise 2026.7.2).
 
@@ -24,17 +25,19 @@ Renovate keeps the pins current in the template repo. `mise run` installs a miss
 
 | Task | Runs | At commit? |
 |---|---|---|
-| `setup` | `mise install`, then `prek install -c .config/copier-python/prek.toml` | — |
+| `setup` | `mise install apm`, then `skills`, then `mise install`, then `prek install -c .config/copier-python/prek.toml`, in the session hook's order, so a tool that fails to install doesn't cost the repo its skills | — |
+| `skills` | Removes `.config/copier-python/.claude/`, then runs `apm install --frozen` in `.config/copier-python/`, installing exactly the skills the template's lock file records. Depends on nothing but the `apm` tool. After a first online install, APM's user-level cache lets it reinstall with no network (verified with APM 0.35.0) | no; through `setup`, `skill-links` and the session hook |
 | `sync` | `uv sync --locked --all-extras --all-groups` | via dependents |
 | `lint` | `ruff check` and `ruff format --check`, both run even if the first fails | yes |
 | `typecheck` | `ty check`, after `sync` | yes |
 | `test` | `uv run --locked pytest`, after `sync` | no (CI and on demand) |
 | `lid` | `lidc check --only reverse-orphan,coverage,spec-id-format --fail-on warning` | yes |
 | `conflicts` | `git grep` over every tracked file in the repo (pathspec `:/`, so it doesn't depend on the current directory) for lines starting `<<<<<<< ` or `>>>>>>> ` | yes |
-| `skill-links` | Fails, naming each, on any entry directly in the repo's `.claude/skills/` or `.agents/skills/` that is a symlink whose target doesn't exist. Passes when neither directory exists | no (CI and on demand) |
+| `skill-links` | After `skills`, fails, naming each, on any entry directly in the repo's `.claude/skills/` or `.agents/skills/`, hidden names included, that is a symlink which doesn't resolve (a link loop included). A link that resolves to a file passes. Passes when neither directory exists | no (CI and on demand) |
+| `lid-version` | `uv run --no-project .config/copier-python/lid_version.py`: the LID version gate (below) | no (CI and on demand) |
 | `check-extra` | nothing (template default) | — |
 | `hooks-extra` | nothing (template default) | yes |
-| `check` | depends on `lint`, `typecheck`, `test`, `lid`, `conflicts`, `skill-links` and `check-extra` | — |
+| `check` | depends on `lint`, `typecheck`, `test`, `lid`, `conflicts`, `skill-links`, `lid-version` and `check-extra` | — |
 | `fix` | `ruff check --fix` then `ruff format` | — |
 | `hooks` | `prek run -c .config/copier-python/prek.toml --all-files`: every commit-time hook, on demand. prek finds no config by itself, because only the installed git hook records the path | — |
 | `exceptions` | `uv run --no-project .config/copier-python/exceptions.py`: lists every named exception and the total ([strict profile](../strict-profile/strict-profile-design.md#named-exceptions)) | — |
@@ -45,7 +48,15 @@ Renovate keeps the pins current in the template repo. `mise run` installs a miss
 - `conflicts` passes when `git grep` finds nothing (exit 1), and fails on a match (exit 0) or on an error (exit 2 or more, including running outside a git repository).
 - `exceptions` always exits 0. It reports and doesn't gate.
 
-**Dangling skill links.** copier's update never deletes a symlink, so when a template release removes or renames one of its skills ([baseline files](../baseline-files/baseline-files-design.md#skills)), the skill's files go but its links in `.claude/skills/` and `.agents/skills/` stay, pointing nowhere. `skill-links` fails the Renovate PR that does this, so it doesn't automerge, and a person deletes the links. It catches a repo's own broken skill links the same way.
+**Dangling skill links.** copier's update never deletes a symlink, so when a template release removes or renames one of its skills ([baseline files](../baseline-files/baseline-files-design.md#skills)), the skill's files go but its links in `.claude/skills/` and `.agents/skills/` stay, pointing nowhere. `skill-links` fails the Renovate PR that does this, so it doesn't automerge, and a person deletes the links. It catches a repo's own broken skill links the same way. It depends on `skills`, because the template's links resolve only once the skills are installed: in CI that dependency is what installs them.
+
+**LID version gate.** `lid_version.py` compares two versions, as exact strings after trimming surrounding whitespace, and fails while they differ:
+- the `- Version:` bullet in the `## LID` block of the repo's instruction file. That file is `AGENTS.md` if it exists, otherwise `CLAUDE.md`; when `AGENTS.md` exists, `CLAUDE.md` isn't read, as `/update-lid` does. The block starts at a line that is exactly `## LID` (so `## LID Tooling` is another section) and ends at the next line starting with `# ` or `## `;
+- the `version` of the entry in the template's lock file (`.config/copier-python/apm.lock.yaml`) whose `repo_url` is exactly `jszmajda/lid` and whose `virtual_path` is exactly `plugins/linked-intent-dev`.
+
+It also fails when there's no such entry or more than one, no instruction file, no `## LID` block, or no `- Version:` bullet in it, and when there's more than one `## LID` block or more than one `- Version:` bullet in it. Each failure prints one line to stderr naming the problem, and the script exits 1; a version mismatch names both versions and says to run `/update-lid`. The script uses only the standard library, so it reads the lock file as APM writes it: a top-level `dependencies:` list with one `- ` item per package, whose scalar fields are indented two spaces, in any order; nested lists such as `deployed_files` are skipped. Options `--lock` and `--instructions` override the two paths, which are relative to the working directory (the repo root, under mise), so this repo's own gate can run it against its root files.
+
+A template update that bumps LID passes everything else and fails this gate, so it can't automerge. Someone runs `/update-lid` on the update's branch and pushes the walk, and the PR then merges. The gate catches a forgotten walk, not an unfinished one: it passes as soon as the bullet names the new version.
 
 **Extension.** A repo adds its own checks by redefining `check-extra` or `hooks-extra` in its `.config/mise/config.toml`, which takes precedence over the fragment. Redefining any other template task is a contract violation. For `check`, the shared CI workflow enforces this by verifying where the task is defined.
 
@@ -74,6 +85,9 @@ One local hook per commit-time task, and no others: `lint`, `typecheck`, `lid`, 
 | Conflict-marker check | A mise task using `git grep` | A third-party hook | No extra dependency. Only the `<<<<<<<` and `>>>>>>>` forms are checked, because `=======` alone is a valid Markdown heading underline |
 | Tool installation | mise pins | uv dev dependencies for ruff and ty | Tool versions belong to the template, not to each repo's lock file. Renovate bumps them in one place |
 | Dangling skill links | A `skill-links` task in `check`, not run at commit | Accept them as a known limitation; run the task at commit too | A dangling link is a skill no agent can load, and only a template update or a repo's own change creates one. CI on the update PR is where it's caught. Leaving it out of the hooks keeps the hook list to the checks a commit can break in the usual way |
+| How `check` installs skills | `skill-links` depends on `skills` | A step in the shared check workflow; `check` depending on `skills` directly | Only `skill-links` reads installed skills, and a dependency keeps the CI stub and the shared workflow unchanged |
+| LID version gate's form | A standard-library Python script run as a mise task | A pytest test (the consumer's tests are its own); parsing the lock file with PyYAML or `yq` | The template can't add tests to a consumer's suite. The lock file's layout is APM's own and fixed, so a line reader suffices without another dependency; a malformed lock file fails the gate rather than passing it |
+| LID version gate at commit | Not run at commit | A commit-time hook | A walk's own commits change the bullet, and any other commit on an update branch is one the gate should not block. CI on the update PR is where it matters |
 | Hooks without mise | Fail closed | Skip when mise is missing | A skipped hook is an unchecked commit, and CI would catch it only after the push |
 
 ## Open Questions & Future Decisions

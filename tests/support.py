@@ -23,9 +23,13 @@ SAMPLE = FIXTURES / "sample"
 ANSWERS_FILE = ".copier-answers.python.yml"
 TEMPLATE_DIR_IN_CONSUMER = Path(".config/copier-python")
 FRAGMENT = TEMPLATE_DIR_IN_CONSUMER / "mise.toml"
-# Where the template's skills live, relative to `template/` and to a consumer's root.
+# Where the template's skills are installed, relative to `template/` and to a consumer's root.
 SKILLS = TEMPLATE_DIR_IN_CONSUMER / ".claude" / "skills"
 SKILL_LINK_DIRS = (Path(".claude/skills"), Path(".agents/skills"))
+# The template's APM lock file, relative to `template/` and to a consumer's root.
+SKILLS_LOCK = TEMPLATE_DIR_IN_CONSUMER / "apm.lock.yaml"
+LID_REPO = "jszmajda/lid"
+LID_PLUGIN = "plugins/linked-intent-dev"
 
 # How mise runs each entry of a task's `run`: POSIX sh with errexit (mise.jdx.dev/tasks/toml-tasks).
 MISE_SHELL = ["sh", "-o", "errexit", "-c"]
@@ -36,9 +40,82 @@ def copier_config() -> dict[str, Any]:
     return yaml.safe_load(COPIER_YML.read_text())
 
 
+def lock_entries(lock: Path) -> list[dict[str, Any]]:
+    """Return the `dependencies` entries of an APM lock file.
+
+    Args:
+        lock: The lock file.
+
+    Returns:
+        Its dependency entries.
+    """
+    return yaml.safe_load(lock.read_text())["dependencies"]
+
+
+def locked_skills(lock: Path) -> list[str]:
+    """Return the skill names an APM lock file records as deployed under `.claude/skills/`.
+
+    Args:
+        lock: The lock file.
+
+    Returns:
+        The sorted skill names.
+    """
+    prefix = ".claude/skills/"
+    return sorted(
+        {
+            path.removeprefix(prefix)
+            for entry in lock_entries(lock)
+            for path in entry.get("deployed_files", [])
+            if path.startswith(prefix) and "/" not in path.removeprefix(prefix)
+        }
+    )
+
+
 def template_skills() -> list[str]:
-    """Return the names of the skills committed in this repo's template."""
-    return sorted(path.name for path in (TEMPLATE_DIR / SKILLS).iterdir() if path.is_dir())
+    """Return the names of the skills this repo's template lock file records."""
+    return locked_skills(TEMPLATE_DIR / SKILLS_LOCK)
+
+
+def locked_lid_version(lock: Path) -> str:
+    """Return the version of the LID plugin an APM lock file records.
+
+    Args:
+        lock: The lock file.
+
+    Returns:
+        The LID entry's version.
+    """
+    entries = [
+        entry
+        for entry in lock_entries(lock)
+        if entry.get("repo_url") == LID_REPO and entry.get("virtual_path") == LID_PLUGIN
+    ]
+    assert len(entries) == 1, entries
+    return str(entries[0]["version"])
+
+
+def write_lid_instructions(consumer: Path) -> None:
+    """Give a rendered consumer the `AGENTS.md` LID block onboarding step 4 would add.
+
+    Args:
+        consumer: A rendered consumer.
+    """
+    version = locked_lid_version(consumer / SKILLS_LOCK)
+    (consumer / "AGENTS.md").write_text(f"# Sample\n\n## LID\n- Mode: Full\n- Version: {version}\n")
+
+
+def fake_skill_install(consumer: Path, names: list[str] | None = None) -> None:
+    """Create installed-skill directories offline, as `mise run skills` would.
+
+    Args:
+        consumer: A rendered consumer.
+        names: The skills to create; by default, the ones the consumer's lock file records.
+    """
+    for name in locked_skills(consumer / SKILLS_LOCK) if names is None else names:
+        skill = consumer / SKILLS / name
+        skill.mkdir(parents=True, exist_ok=True)
+        (skill / "SKILL.md").write_text(f"---\nname: {name}\n---\n")
 
 
 def skill_link_target(name: str) -> str:

@@ -3,17 +3,16 @@
 _subdirectory: template
 _answers_file: .copier-answers.python.yml
 _preserve_symlinks: true
-# What APM keeps beside the skills manifest; consumers get only the deployed skills.
+# What an `apm install` in the template writes: consumers install their own skills.
 _exclude:
-  - /.config/copier-python/apm.yml
-  - /.config/copier-python/apm.lock.yaml
+  - /.config/copier-python/.claude
   - /.config/copier-python/apm_modules
-  - /.config/copier-python/.gitignore
 _min_copier_version: "9.6.0"
 _skip_if_exists:
   - .ruff.toml
   - .config/mise/config.toml
   - docs/arrows/index.yaml
+  - .claude/settings.json
   - .github/workflows/ci.yml
   - .github/workflows/lock-refresh.yml
   - .github/renovate.json
