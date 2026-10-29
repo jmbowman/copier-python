@@ -1,3 +1,5 @@
+# Skills installed from apm.lock.yaml by `mise run skills`.
+/.claude/
 
 # APM dependencies
 apm_modules/

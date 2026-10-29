@@ -15,6 +15,7 @@ REPO_OWNED = {
     ".ruff.toml",
     ".config/mise/config.toml",
     "docs/arrows/index.yaml",
+    ".claude/settings.json",
     ".github/workflows/ci.yml",
     ".github/workflows/lock-refresh.yml",
     ".github/renovate.json",
@@ -84,9 +85,13 @@ def test_agentic_development_ref_is_a_hidden_constant() -> None:
 def test_renovate_custom_manager_tracks_agentic_development_ref() -> None:
     """This repo's Renovate config bumps `agentic_development_ref` from its source repo's tags."""
     config = json.loads((REPO_ROOT / ".github" / "renovate.json").read_text())
-    managers = [m for m in config["customManagers"] if m["customType"] == "regex"]
+    managers = [
+        m
+        for m in config["customManagers"]
+        if m["customType"] == "regex"
+        and any(_js_regex_matches(p, "copier.yml") for p in m["managerFilePatterns"])
+    ]
     assert len(managers) == 1
-    assert any(_js_regex_matches(p, "copier.yml") for p in managers[0]["managerFilePatterns"])
     matches = [
         match.groupdict()
         for pattern in managers[0]["matchStrings"]

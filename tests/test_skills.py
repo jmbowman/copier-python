@@ -1,26 +1,31 @@
-"""Tests of the skills the template delivers: how this repo holds them and how they render."""
+"""Tests of the skills the template delivers: its pins, its links, and this repo's own setup."""
 
 from __future__ import annotations
 
-import os
 import re
 import tomllib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import yaml
 
 from tests.support import (
+    LID_PLUGIN,
+    LID_REPO,
     REPO_ROOT,
     SKILL_LINK_DIRS,
     SKILLS,
+    SKILLS_LOCK,
     TEMPLATE_DIR,
     TEMPLATE_DIR_IN_CONSUMER,
     commit_all,
     copier_config,
     git,
+    lock_entries,
+    release,
     render,
     skill_link_target,
+    template_repo,
     template_skills,
 )
 
@@ -28,31 +33,24 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 MANIFEST_DIR = TEMPLATE_DIR / TEMPLATE_DIR_IN_CONSUMER
-APM_FILES = {"apm.yml", "apm.lock.yaml", "apm_modules", ".gitignore"}
+RENDERED_APM_FILES = ("apm.yml", "apm.lock.yaml", ".gitignore")
+TAG = r"v\d+\.\d+\.\d+"
 
 
-def _files_under(root: Path) -> set[str]:
-    """Every regular file below `root`, as a path relative to `root`."""
-    return {
-        str(path.relative_to(root))
-        for path in root.rglob("*")
-        if path.is_file() and not path.is_symlink()
-    }
+def _manifest_dependencies(manifest: Path) -> list[str]:
+    parsed = yaml.safe_load(manifest.read_text())
+    assert parsed["targets"] == ["claude"]
+    dependencies = parsed["dependencies"]["apm"]
+    assert isinstance(dependencies, list)
+    return [str(dependency) for dependency in dependencies]
 
 
-def _deployed_files() -> set[str]:
-    """The files the template's APM lock file records as deployed, relative to the manifest."""
-    lock = yaml.safe_load((MANIFEST_DIR / "apm.lock.yaml").read_text())
-    # `deployed_files` also lists directories; only files have hashes.
-    return {
-        path for dependency in lock["dependencies"] for path in dependency["deployed_file_hashes"]
-    }
+def _own_mise() -> dict[str, Any]:
+    return tomllib.loads((REPO_ROOT / "mise.toml").read_text())
 
 
-@pytest.fixture
-def fresh(template: Path, tmp_path: Path) -> Path:
-    """A consumer rendered into an empty directory."""
-    return render(template, tmp_path / "consumer")
+def _own_tasks() -> dict[str, dict[str, Any]]:
+    return _own_mise()["tasks"]
 
 
 def test_template_has_skills() -> None:
@@ -63,25 +61,39 @@ def test_template_has_skills() -> None:
 # @spec FILES-SKILL-001
 def test_manifest_pins_the_skills_package_by_tag() -> None:
     """The template's APM manifest deploys only to Claude and pins one package at a release tag."""
-    manifest = yaml.safe_load((MANIFEST_DIR / "apm.yml").read_text())
-    assert manifest["targets"] == ["claude"]
-    dependencies = manifest["dependencies"]["apm"]
+    dependencies = _manifest_dependencies(MANIFEST_DIR / "apm.yml")
     assert len(dependencies) == 1
-    assert re.fullmatch(r"jmbowman/agentic_development#v\d+\.\d+\.\d+", dependencies[0])
+    assert re.fullmatch(rf"jmbowman/agentic_development#{TAG}", dependencies[0])
 
 
-# @spec FILES-SKILL-002
-def test_committed_skills_are_what_apm_deployed() -> None:
-    """The skill files on disk are exactly the files the lock file lists as deployed."""
-    in_manifest_dir = SKILLS.relative_to(TEMPLATE_DIR_IN_CONSUMER)
-    on_disk = {str(in_manifest_dir / name) for name in _files_under(TEMPLATE_DIR / SKILLS)}
-    assert on_disk == _deployed_files()
+# @spec FILES-SKILL-013
+def test_lock_records_the_pinned_skills_package() -> None:
+    """The lock file holds the skills package once, at the manifest's tag."""
+    tag = _manifest_dependencies(MANIFEST_DIR / "apm.yml")[0].split("#")[1]
+    entries = [
+        entry
+        for entry in lock_entries(TEMPLATE_DIR / SKILLS_LOCK)
+        if entry["repo_url"] == "jmbowman/agentic_development"
+    ]
+    assert len(entries) == 1
+    assert entries[0]["resolved_ref"] == tag
+
+
+# @spec FILES-SKILL-020
+def test_lock_records_lid() -> None:
+    """The lock file holds LID's linked-intent-dev plugin once, brought by the skills package."""
+    entries = [
+        entry
+        for entry in lock_entries(TEMPLATE_DIR / SKILLS_LOCK)
+        if entry["repo_url"] == LID_REPO and entry.get("virtual_path") == LID_PLUGIN
+    ]
+    assert len(entries) == 1
 
 
 # @spec FILES-SKILL-003
 @pytest.mark.parametrize("link_dir", SKILL_LINK_DIRS, ids=str)
 def test_template_links_each_skill(link_dir: Path) -> None:
-    """Each skill has one correctly aimed link in the link directory, which holds nothing else."""
+    """Each locked skill has one correctly aimed link in the link directory, and nothing else."""
     entries = {path.name: path for path in (TEMPLATE_DIR / link_dir).iterdir()}
     assert sorted(entries) == template_skills()
     for name, path in entries.items():
@@ -90,46 +102,66 @@ def test_template_links_each_skill(link_dir: Path) -> None:
 
 
 # @spec FILES-SKILL-004
-def test_apm_files_are_excluded_from_rendering() -> None:
-    """The `_exclude` list is exactly the files APM keeps beside the manifest."""
-    expected = {f"/{TEMPLATE_DIR_IN_CONSUMER}/{name}" for name in APM_FILES}
+def test_installed_files_are_excluded_from_rendering() -> None:
+    """`_exclude` names exactly the installed skills and APM's download cache."""
+    expected = {f"/{TEMPLATE_DIR_IN_CONSUMER}/.claude", f"/{TEMPLATE_DIR_IN_CONSUMER}/apm_modules"}
     assert set(copier_config()["_exclude"]) == expected
 
 
-# @spec FILES-SKILL-005
-def test_no_skill_file_is_a_jinja_template() -> None:
-    """No skill file ends in `.jinja`, so copier copies them all verbatim."""
-    assert [name for name in _files_under(TEMPLATE_DIR / SKILLS) if name.endswith(".jinja")] == []
-
-
 # @spec FILES-SKILL-006
-def test_skill_files_render_verbatim(consumer: Path) -> None:
-    """Every skill file reaches the consumer as an identical regular file at the same path."""
-    names = _files_under(TEMPLATE_DIR / SKILLS)
-    assert names
-    for name in names:
-        rendered = consumer / SKILLS / name
-        assert rendered.is_file(), name
-        assert not rendered.is_symlink(), name
-        assert rendered.read_bytes() == (TEMPLATE_DIR / SKILLS / name).read_bytes(), name
+@pytest.mark.parametrize("name", RENDERED_APM_FILES)
+def test_apm_files_render_verbatim(consumer: Path, name: str) -> None:
+    """The manifest, lock file and ignore file reach the consumer unchanged."""
+    rendered = consumer / TEMPLATE_DIR_IN_CONSUMER / name
+    assert rendered.is_file()
+    assert rendered.read_bytes() == (MANIFEST_DIR / name).read_bytes()
+
+
+# @spec FILES-SKILL-014
+def test_ignore_file_lists_installed_skills_and_cache(consumer: Path) -> None:
+    """The template's ignore file covers the installed skills and APM's cache."""
+    lines = (consumer / TEMPLATE_DIR_IN_CONSUMER / ".gitignore").read_text().splitlines()
+    assert "/.claude/" in lines
+    assert "apm_modules/" in lines
+
+
+# @spec FILES-SKILL-021
+@pytest.mark.parametrize(
+    "path",
+    [f"{SKILLS}/any-skill/SKILL.md", f"{TEMPLATE_DIR_IN_CONSUMER}/apm_modules/pkg/file"],
+)
+def test_git_ignores_installed_skills_and_cache(consumer: Path, path: str) -> None:
+    """In a rendered repo, git ignores what an install writes."""
+    assert git(consumer, "check-ignore", "-q", path).returncode == 0
 
 
 # @spec FILES-SKILL-007
 @pytest.mark.parametrize("link_dir", SKILL_LINK_DIRS, ids=str)
 def test_skill_links_render(consumer: Path, link_dir: Path) -> None:
-    """The consumer gets a working link to each skill in both skill directories."""
+    """The consumer gets a link to each locked skill in both skill directories."""
     for name in template_skills():
         link = consumer / link_dir / name
         assert link.is_symlink(), name
         assert str(link.readlink()) == skill_link_target(name), name
-        assert (link / "SKILL.md").is_file(), name
+
+
+def _commit_an_install(template: Path) -> None:
+    """Force-commit files where an install would put them, as `git add -f` would."""
+    base = template / "template" / TEMPLATE_DIR_IN_CONSUMER
+    for path in (base / ".claude/skills/stray/SKILL.md", base / "apm_modules/pkg/apm.yml"):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("stray\n")
+    git(template, "add", "-f", ".")
 
 
 # @spec FILES-SKILL-008
-def test_no_apm_files_render(fresh: Path) -> None:
-    """Nothing APM-internal reaches a consumer."""
-    rendered = {name for _root, dirs, files in os.walk(fresh) for name in dirs + files}
-    assert rendered & APM_FILES == set()
+def test_committed_install_files_do_not_render(tmp_path: Path) -> None:
+    """Installed skills and APM's cache stay out of consumers even if committed by force."""
+    template = template_repo(tmp_path / "template")
+    release(template, "v1.1.0", _commit_an_install)
+    consumer = render(template, tmp_path / "consumer", ref="v1.1.0")
+    assert not (consumer / TEMPLATE_DIR_IN_CONSUMER / ".claude").exists()
+    assert not (consumer / TEMPLATE_DIR_IN_CONSUMER / "apm_modules").exists()
 
 
 # @spec FILES-SKILL-009
@@ -156,14 +188,67 @@ def test_rendering_keeps_the_repos_own_skills(template: Path, tmp_path: Path) ->
 
 
 # @spec FILES-SKILL-010
-def test_check_audits_the_committed_skills() -> None:
-    """This repo pins apm, and `check` audits the template's skills against their lock file."""
-    config = tomllib.loads((REPO_ROOT / "mise.toml").read_text())
-    assert re.fullmatch(r"\d+\.\d+\.\d+", str(config["tools"]["apm"]))
-    tasks = config["tasks"]
-    assert "skills" in tasks["check"]["depends"]
-    assert tasks["skills"]["run"] == "apm audit --ci --no-drift"
-    assert tasks["skills"]["dir"] == f"{{{{config_root}}}}/template/{TEMPLATE_DIR_IN_CONSUMER}"
+def test_own_mise_pins_apm() -> None:
+    """This repo pins an exact apm version."""
+    assert re.fullmatch(r"\d+\.\d+\.\d+", str(_own_mise()["tools"]["apm"]))
+
+
+# @spec FILES-SKILL-022
+def test_own_skills_task_reinstalls_lid() -> None:
+    """This repo's `skills` task clears its installed skills, then installs from its lock file."""
+    task = _own_tasks()["skills"]
+    assert task["run"] == ["rm -rf .claude/skills", "apm install --frozen"]
+    assert "dir" not in task
+
+
+# @spec FILES-SKILL-016
+def test_template_skills_task_installs_in_the_template() -> None:
+    """`template-skills` clears and reinstalls the template's skills from its lock file."""
+    task = _own_tasks()["template-skills"]
+    assert task["dir"] == f"{{{{config_root}}}}/template/{TEMPLATE_DIR_IN_CONSUMER}"
+    assert task["run"] == ["rm -rf .claude", "apm install --frozen"]
+
+
+# @spec FILES-SKILL-023
+def test_own_tests_wait_for_the_template_install() -> None:
+    """The template's install finishes before any test copies the template."""
+    assert "template-skills" in _own_tasks()["test"]["depends"]
+
+
+# @spec FILES-SKILL-017
+def test_own_lid_version_task() -> None:
+    """This repo runs the template's LID version gate against its root files."""
+    assert _own_tasks()["lid-version"]["run"] == (
+        "uv run --no-project template/.config/copier-python/lid_version.py"
+        " --lock apm.lock.yaml --instructions AGENTS.md"
+    )
+
+
+# @spec FILES-SKILL-024
+def test_own_check_runs_the_lid_version_gate() -> None:
+    """This repo's `check` includes its LID version gate."""
+    assert "lid-version" in _own_tasks()["check"]["depends"]
+
+
+# @spec FILES-SKILL-018
+def test_own_setup_installs_skills() -> None:
+    """This repo's `setup` installs its LID skills."""
+    assert "mise run skills" in _own_tasks()["setup"]["run"]
+
+
+# @spec FILES-SKILL-019
+def test_own_manifest_pins_lid() -> None:
+    """This repo's own APM manifest pins LID's linked-intent-dev plugin at a release tag."""
+    dependencies = _manifest_dependencies(REPO_ROOT / "apm.yml")
+    assert len(dependencies) == 1
+    assert re.fullmatch(rf"{LID_REPO}/{LID_PLUGIN}#{TAG}", dependencies[0])
+
+
+# @spec FILES-SKILL-025
+@pytest.mark.parametrize("path", [".claude/skills/any-skill/SKILL.md", "apm_modules/pkg/file"])
+def test_own_installs_are_ignored(path: str) -> None:
+    """This repo's root ignore rules cover its installed skills and APM's cache."""
+    assert git(REPO_ROOT, "check-ignore", "-q", path).returncode == 0
 
 
 # @spec FILES-SKILL-012

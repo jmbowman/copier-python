@@ -11,9 +11,23 @@ ruff = "0.17.2"
 ty = "0.0.91"
 prek = "0.5.7"
 "github:EtaCassiopeia/lid-tooling" = { version = "0.3.0", asset_pattern = "lidc-x86_64-unknown-linux-gnu" }
+apm = "0.35.0"
 
+# apm and the skills first, as the session hook does, so a tool that fails to install
+# doesn't cost the repo its skills.
 [tasks.setup]
-run = ["mise install", "prek install -c .config/copier-python/prek.toml"]
+run = [
+  "mise install apm",
+  "mise run skills",
+  "mise install",
+  "prek install -c .config/copier-python/prek.toml",
+]
+
+# Installs exactly the skills apm.lock.yaml records. Clearing first drops a skill a template
+# update removed; APM's cache makes the reinstall quick and lets it work offline.
+[tasks.skills]
+dir = "{{config_root}}/.config/copier-python"
+run = ["rm -rf .claude", "apm install --frozen"]
 
 [tasks.sync]
 run = "uv sync --locked --all-extras --all-groups"
@@ -49,7 +63,9 @@ esac
 """
 
 # copier never deletes a symlink, so a skill a template release removes leaves its links dangling.
+# The template's links resolve only once the skills are installed, so install them first.
 [tasks.skill-links]
+depends = ["skills"]
 run = """
 status=0
 for link in .claude/skills/* .claude/skills/.[!.]* .claude/skills/..?* \\
@@ -62,6 +78,10 @@ done
 exit $status
 """
 
+# Fails while the instruction file's `## LID` version differs from the one the lock file pins.
+[tasks.lid-version]
+run = "uv run --no-project .config/copier-python/lid_version.py"
+
 [tasks.check-extra]
 run = "true"
 
@@ -69,7 +89,9 @@ run = "true"
 run = "true"
 
 [tasks.check]
-depends = ["lint", "typecheck", "test", "lid", "conflicts", "skill-links", "check-extra"]
+depends = [
+  "lint", "typecheck", "test", "lid", "conflicts", "skill-links", "lid-version", "check-extra",
+]
 
 [tasks.fix]
 run = ["ruff check --fix", "ruff format"]

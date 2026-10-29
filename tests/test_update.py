@@ -8,16 +8,17 @@ from typing import TYPE_CHECKING
 
 from tests.support import (
     SKILL_LINK_DIRS,
-    SKILLS,
+    SKILLS_LOCK,
     commit_all,
     consumer_repo,
+    fake_skill_install,
     git,
+    lock_entries,
     release,
     render,
     run_task_commands,
     skill_link_target,
     template_repo,
-    template_skills,
     update,
 )
 
@@ -39,6 +40,7 @@ REPO_OWNED = (
     ".ruff.toml",
     ".config/mise/config.toml",
     "docs/arrows/index.yaml",
+    ".claude/settings.json",
     ".github/workflows/ci.yml",
     ".github/renovate.json",
 )
@@ -168,22 +170,16 @@ def test_answering_the_client_id_later_renders_the_stub(tmp_path: Path) -> None:
     assert "client-id: Iv23liLater" in stub
 
 
-def _skill_tree(root: Path) -> dict[str, bytes]:
-    """Every file below `root`, mapped to its content."""
-    return {
-        str(path.relative_to(root)): path.read_bytes()
-        for path in root.rglob("*")
-        if path.is_file() and not path.is_symlink()
-    }
-
-
-def _change_a_skill(template: Path) -> None:
-    """v1.1.0 edits, adds and deletes files in the template's first skill."""
-    skill = template / "template" / SKILLS / template_skills()[0]
-    (skill / "SKILL.md").write_text((skill / "SKILL.md").read_text() + "\nChanged in v1.1.0.\n")
-    (skill / "added-in-v1.1.0.md").write_text("Added in v1.1.0.\n")
-    deleted = min(name for name in _skill_tree(skill) if name != "SKILL.md")
-    (skill / deleted).unlink()
+def _bump_the_locked_package(template: Path) -> None:
+    """v1.1.0 changes the skills package's locked commit and version, as a pin bump would."""
+    lock = template / "template" / SKILLS_LOCK
+    entry = next(
+        entry for entry in lock_entries(lock) if entry["repo_url"] == "jmbowman/agentic_development"
+    )
+    text = lock.read_text()
+    text = text.replace(str(entry["resolved_commit"]), "0" * 40)
+    text = text.replace(f"version: {entry['version']}\n", "version: 9.9.9\n", 1)
+    lock.write_text(text)
 
 
 def _add_own_skills(consumer: Path) -> dict[str, bytes | str]:
@@ -212,60 +208,66 @@ def _own_entries(consumer: Path) -> dict[str, bytes | str]:
 
 
 # @spec FILES-UPD-010
-def test_skill_changes_update_beside_the_repos_own_skills(tmp_path: Path) -> None:
-    """A release that edits, adds and deletes skill files updates cleanly around repo skills."""
+def test_lock_changes_update_beside_the_repos_own_skills(tmp_path: Path) -> None:
+    """A release that changes the template's lock file updates cleanly around repo skills."""
     template = template_repo(tmp_path / "template")
     consumer = consumer_repo(template, tmp_path / "consumer")
     own = _add_own_skills(consumer)
-    release(template, "v1.1.0", _change_a_skill)
+    release(template, "v1.1.0", _bump_the_locked_package)
 
     update(consumer, "v1.1.0")
 
     fresh = render(template, tmp_path / "fresh", ref="v1.1.0")
-    skill = SKILLS / template_skills()[0]
-    assert _skill_tree(consumer / skill) == _skill_tree(fresh / skill)
-    assert all(
-        CONFLICT_START not in text.decode() for text in _skill_tree(consumer / skill).values()
-    )
+    lock = (consumer / SKILLS_LOCK).read_text()
+    assert CONFLICT_START not in lock
+    assert lock == (fresh / SKILLS_LOCK).read_text()
+    assert "0" * 40 in lock
     assert _own_entries(consumer) == own
 
 
-def _add_skill(template: Path) -> None:
-    """v1.1.0 adds a skill and its two links."""
-    root = template / "template"
-    (root / SKILLS / "added-skill").mkdir()
-    (root / SKILLS / "added-skill/SKILL.md").write_text("---\nname: added-skill\n---\n")
+def _add_links(template: Path) -> None:
+    """v1.1.0 adds the two links of a new skill."""
     for link_dir in SKILL_LINK_DIRS:
-        (root / link_dir / "added-skill").symlink_to(skill_link_target("added-skill"))
+        (template / "template" / link_dir / "added-skill").symlink_to(
+            skill_link_target("added-skill")
+        )
 
 
-def _remove_skill(template: Path) -> None:
-    """v1.2.0 removes the skill v1.1.0 added, with its links."""
-    root = template / "template"
-    (root / SKILLS / "added-skill/SKILL.md").unlink()
-    (root / SKILLS / "added-skill").rmdir()
+def _remove_links(template: Path) -> None:
+    """v1.2.0 removes the links v1.1.0 added."""
     for link_dir in SKILL_LINK_DIRS:
-        (root / link_dir / "added-skill").unlink()
+        (template / "template" / link_dir / "added-skill").unlink()
 
 
-# @spec FILES-UPD-011, FILES-UPD-012
-def test_skills_added_and_removed_by_a_release(tmp_path: Path) -> None:
-    """A release adds a skill and its links; removing it deletes the files and fails the check."""
+# @spec FILES-UPD-011
+def test_links_added_by_a_release(tmp_path: Path) -> None:
+    """A release that adds a skill's links brings both."""
     template = template_repo(tmp_path / "template")
     consumer = consumer_repo(template, tmp_path / "consumer")
-    release(template, "v1.1.0", _add_skill)
-    release(template, "v1.2.0", _remove_skill)
+    release(template, "v1.1.0", _add_links)
 
     update(consumer, "v1.1.0")
-    assert (consumer / SKILLS / "added-skill/SKILL.md").is_file()
+
     for link_dir in SKILL_LINK_DIRS:
         link = consumer / link_dir / "added-skill"
         assert str(link.readlink()) == skill_link_target("added-skill"), link_dir
 
-    commit_all(consumer, "update to v1.1.0")
+
+# @spec FILES-UPD-012
+def test_links_removed_by_a_release_fail_the_check(tmp_path: Path) -> None:
+    """Removed links dangle, since copier never deletes symlinks, until a person deletes both."""
+    template = template_repo(tmp_path / "template")
+    release(template, "v1.1.0", _add_links)
+    release(template, "v1.2.0", _remove_links)
+    consumer = tmp_path / "consumer"
+    consumer.mkdir()
+    git(consumer, "init", "-q")
+    render(template, consumer, ref="v1.1.0")
+    commit_all(consumer, "render v1.1.0")
+
     update(consumer, "v1.2.0")
-    assert not (consumer / SKILLS / "added-skill").exists()
-    # copier never deletes symlinks, so the links dangle until `skill-links` gets them removed.
+    # The lock file never listed `added-skill`, so an install leaves its links dangling.
+    fake_skill_install(consumer)
     exit_code, output = run_task_commands(consumer, "skill-links")
     assert exit_code != 0, output
     first, second = (consumer / link_dir / "added-skill" for link_dir in SKILL_LINK_DIRS)
