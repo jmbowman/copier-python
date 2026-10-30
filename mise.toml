@@ -3,7 +3,7 @@ min_version = "2026.7.2"
 
 [tools]
 uv = "0.13.5"
-ruff = "0.17.2"
+ruff = "0.17.3"
 ty = "0.0.92"
 prek = "0.5.7"
 "github:kjanat/actionlint" = "1.17.0"
