@@ -4,7 +4,7 @@ min_version = "2026.7.2"
 [tools]
 uv = "0.13.6"
 ruff = "0.17.3"
-ty = "0.0.93"
+ty = "0.0.94"
 prek = "0.5.7"
 "github:kjanat/actionlint" = "1.17.0"
 "github:EtaCassiopeia/lid-tooling" = { version = "0.3.0", asset_pattern = "lidc-x86_64-unknown-linux-gnu" }
