@@ -4,12 +4,12 @@ dependencies:
 - repo_url: jszmajda/lid
   name: linked-intent-dev
   host: github.com
-  resolved_commit: 533ceaa3ab4dfc371a38fb13f10d47e8f7123da5
-  resolved_ref: v1.4.0
-  version: 1.4.0
+  resolved_commit: 656b2a9541fdbe8823c08432ca0d22d904652cf4
+  resolved_ref: v1.4.3
+  version: 1.4.3
   virtual_path: plugins/linked-intent-dev
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .claude/skills/lid-coach
   - .claude/skills/lid-coach/SKILL.md
@@ -26,30 +26,36 @@ dependencies:
   - .claude/skills/linked-intent-dev/references/ears-syntax.md
   - .claude/skills/linked-intent-dev/references/hld-template.md
   - .claude/skills/linked-intent-dev/references/lld-templates.md
+  - .claude/skills/linked-intent-dev/references/tour-offer.md
+  - .claude/skills/linked-intent-dev/references/tour-topics.md
+  - .claude/skills/linked-intent-dev/references/tour.md
   - .claude/skills/update-lid
   - .claude/skills/update-lid/SKILL.md
   - .claude/skills/update-lid/evals/evals.json
   - .claude/skills/update-lid/references/agents-md-template.md
   - .claude/skills/update-lid/references/workflow-doc.md
   deployed_file_hashes:
-    .claude/skills/lid-coach/SKILL.md: sha256:873d7e81a8f0bc6cfb05d78897f01de7f295712633dff2603eca6591f1198fba
-    .claude/skills/lid-coach/evals/evals.json: sha256:77ce1bc0c53aedfd5de2987e0dc33160f7061db3201468fdd11abedaaeb3eb19
+    .claude/skills/lid-coach/SKILL.md: sha256:bd5c6aefa1ff52add03a171eae9d1c9c549e64336ccc4bf942a465799ebdd714
+    .claude/skills/lid-coach/evals/evals.json: sha256:6d2e3af476c044a90ab36105d2e67f1fe3667c4d4251b7a2b94b7d41bc67cc4e
     .claude/skills/lid-coach/references/conversational-guidance.md: sha256:ae237b4dcac6c4af05dce6fc12450f7982dc225067cd837c68e5032ad653262b
     .claude/skills/lid-coach/references/follow-up-turns.md: sha256:0a88a1badc8c4a3206386a36cea3816c7f3af1a4430abda60a0b6a899953b5dd
-    .claude/skills/lid-coach/references/lid-faq.md: sha256:9b256e4c46c50b662b379b1dcde21d4600ccf4232755454da78a6a4a98059aa6
+    .claude/skills/lid-coach/references/lid-faq.md: sha256:eb8dbefc6dd23055e0fac4ba074aac8798bf955ff29fdad5ed2e25d7f9b4f1c0
     .claude/skills/lid-coach/references/sampling.md: sha256:62cbf65cf218fcc034a356447dadd7b3537c32247ba91e35dbd2fa9ef234e4bc
-    .claude/skills/linked-intent-dev/SKILL.md: sha256:ea2dde2d8b65baca878a9590f818bd99c9717e529aca344bb11730357125ae4a
-    .claude/skills/linked-intent-dev/evals/evals.json: sha256:99c2e779a878b62b9aa6b49c98feb97dbf55e7cecd11337fa1cee0fce0306101
-    .claude/skills/linked-intent-dev/references/capability-flags.md: sha256:99ca53133c8de10563e21eb1afe3efdb63e341bdadd5482ec1c505a24dfad149
+    .claude/skills/linked-intent-dev/SKILL.md: sha256:df7414621b5279dd2394747c5465b019b04a4f4908a5910f3393dd4bdd82b58d
+    .claude/skills/linked-intent-dev/evals/evals.json: sha256:874ff8bf879975809e91f6f8f5a8a8c1c021302f595908eeec02750efc32d716
+    .claude/skills/linked-intent-dev/references/capability-flags.md: sha256:f8c47f98dd464e14deee305099f68ef7982403c9d37f8ec015952f15e5ad7919
     .claude/skills/linked-intent-dev/references/decision-doc-template.md: sha256:057ffed75e3528afce110da689bfb69b48d1afcb18f3bec546ebe051767cc58e
     .claude/skills/linked-intent-dev/references/ears-syntax.md: sha256:6e15b0708528805d00309eb1dfdd7a14d76ac64e21d7cdd0d300a5ed0199f904
     .claude/skills/linked-intent-dev/references/hld-template.md: sha256:f06557b1a0cf8831bc00b2fc336eb25fe7d953b39770d293ed4f6b4f1a78b5ca
     .claude/skills/linked-intent-dev/references/lld-templates.md: sha256:788958fe9e82c61785b2fbcb241f3c8ace7fd46723d4bc540cf0f94253cdac0b
-    .claude/skills/update-lid/SKILL.md: sha256:c47475501afeead6a2143e410392d8a000f518df00c7a98d9ac51dbe2b2e19be
-    .claude/skills/update-lid/evals/evals.json: sha256:0f354f4e1ddc47b9f358d233b0ee75de5e77e3868b23ca1fdc28bf093e102190
+    .claude/skills/linked-intent-dev/references/tour-offer.md: sha256:8a2de672621bab87d650f8245bb987333f82f1867c056d5875a0be3dfeefc12f
+    .claude/skills/linked-intent-dev/references/tour-topics.md: sha256:d5b2cc75ebfa8e1da94ad66ba236beed10dcb0152139077240ba3aaece802ddf
+    .claude/skills/linked-intent-dev/references/tour.md: sha256:5fc15f50eb5798f6ef7c7a260797fbb18420d7d2b4f4cff1316e53f5f552564d
+    .claude/skills/update-lid/SKILL.md: sha256:e2a3fdfd93c88426e8841ef0d0cc7e04eed114d8ab7d11af6060ae5cd619c06d
+    .claude/skills/update-lid/evals/evals.json: sha256:9c7196841b71105c96fedec58bbe511d828cb034ee80f3f63b9c49ac68c0b55a
     .claude/skills/update-lid/references/agents-md-template.md: sha256:972731120f897bee2e3631904a7c68e05f10b07e4634911a69c2e3945d90b460
-    .claude/skills/update-lid/references/workflow-doc.md: sha256:0c0869c4b9ad447b555a7cd32e06226f012c72fb82471439756474d4502a6f39
-  content_hash: sha256:15f00832647ca27f11f56dde78f3350ec27d47ca2f90b21a12eb5fcc5afee5f4
+    .claude/skills/update-lid/references/workflow-doc.md: sha256:58fd70ba632eddbfd230e7d017aa27f85c620326a71408a1c4f5e4c735932ddc
+  content_hash: sha256:7ffd1da346458c9a1f7f8dc0e97f79cebedf4331eb9306ab4f2d3d94d88a25b1
   declared_license: MIT
 deployments:
 - kind: project-relative
@@ -69,7 +75,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:873d7e81a8f0bc6cfb05d78897f01de7f295712633dff2603eca6591f1198fba
+  content_hash: sha256:bd5c6aefa1ff52add03a171eae9d1c9c549e64336ccc4bf942a465799ebdd714
 - kind: project-relative
   target: claude
   value: .claude/skills/lid-coach/evals/evals.json
@@ -78,7 +84,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:77ce1bc0c53aedfd5de2987e0dc33160f7061db3201468fdd11abedaaeb3eb19
+  content_hash: sha256:6d2e3af476c044a90ab36105d2e67f1fe3667c4d4251b7a2b94b7d41bc67cc4e
 - kind: project-relative
   target: claude
   value: .claude/skills/lid-coach/references/conversational-guidance.md
@@ -105,7 +111,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:9b256e4c46c50b662b379b1dcde21d4600ccf4232755454da78a6a4a98059aa6
+  content_hash: sha256:eb8dbefc6dd23055e0fac4ba074aac8798bf955ff29fdad5ed2e25d7f9b4f1c0
 - kind: project-relative
   target: claude
   value: .claude/skills/lid-coach/references/sampling.md
@@ -132,7 +138,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:ea2dde2d8b65baca878a9590f818bd99c9717e529aca344bb11730357125ae4a
+  content_hash: sha256:df7414621b5279dd2394747c5465b019b04a4f4908a5910f3393dd4bdd82b58d
 - kind: project-relative
   target: claude
   value: .claude/skills/linked-intent-dev/evals/evals.json
@@ -141,7 +147,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:99c2e779a878b62b9aa6b49c98feb97dbf55e7cecd11337fa1cee0fce0306101
+  content_hash: sha256:874ff8bf879975809e91f6f8f5a8a8c1c021302f595908eeec02750efc32d716
 - kind: project-relative
   target: claude
   value: .claude/skills/linked-intent-dev/references/capability-flags.md
@@ -150,7 +156,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:99ca53133c8de10563e21eb1afe3efdb63e341bdadd5482ec1c505a24dfad149
+  content_hash: sha256:f8c47f98dd464e14deee305099f68ef7982403c9d37f8ec015952f15e5ad7919
 - kind: project-relative
   target: claude
   value: .claude/skills/linked-intent-dev/references/decision-doc-template.md
@@ -189,6 +195,33 @@ deployments:
   content_hash: sha256:788958fe9e82c61785b2fbcb241f3c8ace7fd46723d4bc540cf0f94253cdac0b
 - kind: project-relative
   target: claude
+  value: .claude/skills/linked-intent-dev/references/tour-offer.md
+  runtime: null
+  scope: project
+  owners:
+  - jszmajda/lid/plugins/linked-intent-dev
+  active_owner: jszmajda/lid/plugins/linked-intent-dev
+  content_hash: sha256:8a2de672621bab87d650f8245bb987333f82f1867c056d5875a0be3dfeefc12f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/linked-intent-dev/references/tour-topics.md
+  runtime: null
+  scope: project
+  owners:
+  - jszmajda/lid/plugins/linked-intent-dev
+  active_owner: jszmajda/lid/plugins/linked-intent-dev
+  content_hash: sha256:d5b2cc75ebfa8e1da94ad66ba236beed10dcb0152139077240ba3aaece802ddf
+- kind: project-relative
+  target: claude
+  value: .claude/skills/linked-intent-dev/references/tour.md
+  runtime: null
+  scope: project
+  owners:
+  - jszmajda/lid/plugins/linked-intent-dev
+  active_owner: jszmajda/lid/plugins/linked-intent-dev
+  content_hash: sha256:5fc15f50eb5798f6ef7c7a260797fbb18420d7d2b4f4cff1316e53f5f552564d
+- kind: project-relative
+  target: claude
   value: .claude/skills/update-lid
   runtime: null
   scope: project
@@ -204,7 +237,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:c47475501afeead6a2143e410392d8a000f518df00c7a98d9ac51dbe2b2e19be
+  content_hash: sha256:e2a3fdfd93c88426e8841ef0d0cc7e04eed114d8ab7d11af6060ae5cd619c06d
 - kind: project-relative
   target: claude
   value: .claude/skills/update-lid/evals/evals.json
@@ -213,7 +246,7 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:0f354f4e1ddc47b9f358d233b0ee75de5e77e3868b23ca1fdc28bf093e102190
+  content_hash: sha256:9c7196841b71105c96fedec58bbe511d828cb034ee80f3f63b9c49ac68c0b55a
 - kind: project-relative
   target: claude
   value: .claude/skills/update-lid/references/agents-md-template.md
@@ -231,4 +264,4 @@ deployments:
   owners:
   - jszmajda/lid/plugins/linked-intent-dev
   active_owner: jszmajda/lid/plugins/linked-intent-dev
-  content_hash: sha256:0c0869c4b9ad447b555a7cd32e06226f012c72fb82471439756474d4502a6f39
+  content_hash: sha256:58fd70ba632eddbfd230e7d017aa27f85c620326a71408a1c4f5e4c735932ddc
