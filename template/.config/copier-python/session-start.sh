@@ -10,7 +10,7 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
 fi
 
 # Renovate keeps this equal to the jdx/mise-action `version:` in the template repo's CI.
-MISE_VERSION=2026.11.0
+MISE_VERSION=2026.11.1
 finished=false
 mise="~/.local/bin/mise"
 
