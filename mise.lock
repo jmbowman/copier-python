@@ -89,49 +89,49 @@ url = "https://github.com/EtaCassiopeia/lid-tooling/releases/download/v0.3.0/lid
 url_api = "https://api.github.com/repos/EtaCassiopeia/lid-tooling/releases/assets/441761424"
 
 [[tools."github:kjanat/actionlint"]]
-version = "1.17.0"
+version = "1.17.1"
 backend = "github:kjanat/actionlint"
 
 [tools."github:kjanat/actionlint"."platforms.linux-arm64"]
-checksum = "sha256:9be067d6b6e2f455fd0144850520b4b1114a0a792ca6e003302c939792589345"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506359"
+checksum = "sha256:81fa498f30f5dfadcc87fff0ff073281703fc56e9b50bc523b415c69aef0cccc"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727138044"
 provenance = "github-attestations"
 
 [tools."github:kjanat/actionlint"."platforms.linux-arm64-musl"]
-checksum = "sha256:9be067d6b6e2f455fd0144850520b4b1114a0a792ca6e003302c939792589345"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506359"
+checksum = "sha256:81fa498f30f5dfadcc87fff0ff073281703fc56e9b50bc523b415c69aef0cccc"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727138044"
 provenance = "github-attestations"
 
 [tools."github:kjanat/actionlint"."platforms.linux-x64"]
-checksum = "sha256:620abd485a12b6ab1125b844a876414e1d5bd2af8a3125b27f82b01d0d9d6e5a"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506357"
+checksum = "sha256:6bfe0f49f0e108b9b23732baf7de63bfa4d89174fa40f9cb98feb9676df3318f"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727138046"
 provenance = "github-attestations"
 
 [tools."github:kjanat/actionlint"."platforms.linux-x64-musl"]
-checksum = "sha256:620abd485a12b6ab1125b844a876414e1d5bd2af8a3125b27f82b01d0d9d6e5a"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506357"
+checksum = "sha256:6bfe0f49f0e108b9b23732baf7de63bfa4d89174fa40f9cb98feb9676df3318f"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727138046"
 provenance = "github-attestations"
 
 [tools."github:kjanat/actionlint"."platforms.macos-arm64"]
-checksum = "sha256:f123b7ad57a0fe376dcc85e81b7e04e85eb39219184803fc25f989b255f569b4"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506341"
+checksum = "sha256:c19eed4942963cf37dd058dd5ad3871ad2c655062234de539cabc8405ad27342"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727137994"
 provenance = "github-attestations"
 
 [tools."github:kjanat/actionlint"."platforms.macos-x64"]
-checksum = "sha256:e5fa505c0236666f2b1f36a2852db5fad6e186e9125babee017538a4049e3afb"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506337"
+checksum = "sha256:5f7c36a84ba0a1dabfa3f7c50e784db610dba459c9ed4a84d388aa8fc74263c7"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727137993"
 provenance = "github-attestations"
 
 [tools."github:kjanat/actionlint"."platforms.windows-x64"]
-checksum = "sha256:503a7649a97c5afb07aa51703b94066c9f63b5eabc25c55a6860eabd5298d559"
-url = "https://github.com/kjanat/actionlint/releases/download/v1.17.0/actionlint_1.17.0_windows_amd64.zip"
-url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/561506379"
+checksum = "sha256:7a0e1a2466029df6b57e0e2690951a05339d05155fb7a4be80a8b14dc81586b8"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.17.1/actionlint_1.17.1_windows_amd64.zip"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/727138066"
 provenance = "github-attestations"
 
 [[tools.prek]]
