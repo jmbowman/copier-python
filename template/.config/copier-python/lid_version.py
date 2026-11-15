@@ -1,12 +1,13 @@
 # /// script
 # requires-python = ">=3.11"
 # ///
-"""Fail while the repo's LID version differs from the one its APM lock file pins.
+"""Fail while the repo's LID major.minor differs from the one its APM lock file pins.
 
 Owned by the copier-python template; run it with `mise run lid-version`. It compares the
 `- Version:` bullet in the `## LID` block of the instruction file (AGENTS.md if it exists,
-otherwise CLAUDE.md) with the `version` of the lock file's linked-intent-dev entry. A template
-update that bumps LID fails here until someone runs `/update-lid` on its branch.
+otherwise CLAUDE.md) with the `version` of the lock file's linked-intent-dev entry, by
+major.minor, as LID does. A template update that bumps LID's minor or major version fails here
+until someone runs `/update-lid` on its branch; a patch bump passes.
 
 It reads the lock file as APM writes it, with the standard library only: a top-level
 `dependencies:` list, one `- ` item per package, its scalar fields indented two spaces.
@@ -25,6 +26,7 @@ LID_REPO = "jszmajda/lid"
 LID_PLUGIN = "plugins/linked-intent-dev"
 FIELD = re.compile(r"(?P<key>[A-Za-z_][A-Za-z0-9_]*):(?P<value>.*)")
 VERSION_BULLET = re.compile(r"- Version:(?P<value>.*)")
+MAJOR_MINOR = re.compile(r"([0-9]+)\.([0-9]+)(?:\.|\Z)")
 
 
 class GateError(Exception):
@@ -49,10 +51,10 @@ def read_lines(path: Path, what: str) -> list[str]:
         raise GateError(msg) from error
 
 
-def lock_dependencies(lock: Path) -> list[dict[str, str]]:
-    """Return the scalar fields of each item in the lock file's top-level `dependencies` list."""
+def lock_dependencies(lock: Path) -> list[dict[str, list[str]]]:
+    """Return each scalar field's values, in order, per item of the lock's `dependencies` list."""
     lines = read_lines(lock, "the lock file")
-    items: list[dict[str, str]] = []
+    items: list[dict[str, list[str]]] = []
     in_dependencies = False
     for line in lines:
         if not in_dependencies:
@@ -68,7 +70,7 @@ def lock_dependencies(lock: Path) -> list[dict[str, str]]:
         scalar = body.startswith("  ") and not body.startswith(("   ", "  - "))
         field = FIELD.fullmatch(body[2:]) if scalar else None
         if items and field and field.group("value").strip():
-            items[-1][field.group("key")] = value(field.group("value"))
+            items[-1].setdefault(field.group("key"), []).append(value(field.group("value")))
     return items
 
 
@@ -77,16 +79,46 @@ def locked_lid_version(lock: Path) -> str:
     entries = [
         item
         for item in lock_dependencies(lock)
-        if item.get("repo_url") == LID_REPO and item.get("virtual_path") == LID_PLUGIN
+        if item.get("repo_url") == [LID_REPO] and item.get("virtual_path") == [LID_PLUGIN]
     ]
     if len(entries) != 1:
         found = "no" if not entries else str(len(entries))
         msg = f"{lock} has {found} {LID_REPO} {LID_PLUGIN} entries; expected one"
         raise GateError(msg)
-    if "version" not in entries[0]:
-        msg = f"{lock}'s {LID_REPO} {LID_PLUGIN} entry has no version"
+    versions = entries[0].get("version", [])
+    if len(versions) != 1:
+        found = "no" if not versions else str(len(versions))
+        msg = f"{lock}'s {LID_REPO} {LID_PLUGIN} entry has {found} `version` fields; expected one"
         raise GateError(msg)
-    return entries[0]["version"]
+    return versions[0]
+
+
+def major_minor(version: str) -> str | None:
+    """Return a version's first two dot-separated parts, as text, or None if it has none.
+
+    `1.4.0`, `1.4` and `1.5.0-rc.1` give `1.4`, `1.4` and `1.5`; `v1.4.0`, `1` and `1.4-rc`
+    give None. The parts are compared as text, so `01.4` and `1.4` differ.
+    """
+    match = MAJOR_MINOR.match(version)
+    return f"{match[1]}.{match[2]}" if match else None
+
+
+def version_problem(instructions: Path, declared: str, lock: Path, locked: str) -> str | None:
+    """Return the gate's one-line failure for the two versions, or None if they agree."""
+    unreadable = [
+        f"{path}'s LID version {version!r}"
+        for path, version in ((instructions, declared), (lock, locked))
+        if major_minor(version) is None
+    ]
+    if unreadable:
+        verb = "has" if len(unreadable) == 1 else "have"
+        return f"{' and '.join(unreadable)} {verb} no major.minor"
+    if major_minor(declared) != major_minor(locked):
+        return (
+            f"{instructions} declares LID {declared}, but the lock file pins {locked}, "
+            "a different major.minor; run /update-lid"
+        )
+    return None
 
 
 def instruction_file(option: Path | None) -> Path:
@@ -140,11 +172,9 @@ def main() -> None:
     except GateError as error:
         sys.stderr.write(f"{error}\n")
         sys.exit(1)
-    if declared != locked:
-        sys.stderr.write(
-            f"{instructions} declares LID {declared}, but the lock file pins {locked}; "
-            "run /update-lid to walk the design docs to the new version\n"
-        )
+    problem = version_problem(instructions, declared, args.lock, locked)
+    if problem is not None:
+        sys.stderr.write(f"{problem}\n")
         sys.exit(1)
 
 

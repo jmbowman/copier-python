@@ -37,10 +37,10 @@ Onboarding sets that up for a repo that doesn't use LID yet.
 3. Run `mise trust`, then `mise run setup` to install the tools, the template's skills and the
    git hook.
 4. Run `/update-lid` in Claude Code, from the LID skills `mise run setup` installed, unless the
-   instruction file (`AGENTS.md` or `CLAUDE.md`) already has a `## LID` block at the LID version
-   in `.config/copier-python/apm.lock.yaml`. In a repo without LID it adds the minimum the checks
-   need: the LID block,
-   `docs/intent/` and a starting `docs/high-level-design.md`.
+   instruction file (`AGENTS.md` or `CLAUDE.md`) already has a `## LID` block whose `- Version:`
+   has the major.minor of the LID version in `.config/copier-python/apm.lock.yaml`. In a repo
+   without LID it adds the minimum the checks need: the LID block, `docs/intent/` and a starting
+   `docs/high-level-design.md`.
 5. Run `mise run fix` for ruff's automatic fixes and formatting. Fix what remains, or record each
    finding as a named exception: `ruff check --add-noqa`, an entry in `.ruff.toml`'s
    `[lint.extend-per-file-ignores]` table, or `mise exec -- ty check --add-ignore`.
@@ -108,8 +108,9 @@ Run `mise trust`, then `mise run setup`.
 Renovate opens a PR for each template release and runs `copier update`. Template-owned files are
 re-rendered; repo-owned files (`.ruff.toml`, `.config/mise/config.toml`, the `.github/` stubs,
 `docs/arrows/index.yaml`, `.claude/settings.json`) stay as the repo left them. An update that
-moves to a new LID version fails the `lid-version` check until someone runs `/update-lid` on its
-branch and pushes the result; it then merges as usual. Add checks by overriding `check-extra` or
+moves to a new LID minor or major version fails the `lid-version` check until someone runs
+`/update-lid` on its branch and pushes the result; it then merges as usual. A LID patch version
+passes the check and merges like any other update. Add checks by overriding `check-extra` or
 `hooks-extra` in `.config/mise/config.toml`; don't edit files under `.config/copier-python/` or
 the template's skill links.
 
