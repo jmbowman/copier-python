@@ -94,14 +94,114 @@ def test_matching_versions_pass(tmp_path: Path, bullet: str, locked: str) -> Non
     assert completed.returncode == 0, completed.stderr
 
 
+# @spec CHECKS-GATE-001
+@pytest.mark.parametrize(
+    ("bullet", "locked"),
+    [
+        ("1.4.0", "1.4.5"),
+        ("1.4.5", "1.4.0"),
+        ("1.4", "1.4.0"),
+        ("1.5.0-rc.1", "1.5.0"),
+        ("1.4.0 (walked)", "1.4.0"),
+    ],
+    ids=["lock-newer-patch", "bullet-newer-patch", "no-patch", "prerelease", "trailing-text"],
+)
+def test_versions_with_the_same_major_minor_pass(tmp_path: Path, bullet: str, locked: str) -> None:
+    """Only the major.minor counts: a patch or later part may differ either way."""
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version=locked)), _instructions(bullet))
+    completed = _gate(repo)
+    assert completed.returncode == 0, completed.stderr
+
+
 # @spec CHECKS-GATE-002
-def test_a_version_mismatch_fails_naming_both(tmp_path: Path) -> None:
-    """A mismatch names both versions and how to fix it."""
-    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version="1.5.0")), _instructions("1.4.0"))
+@pytest.mark.parametrize(
+    ("bullet", "locked"),
+    [
+        ("1.4.0", "1.5.0"),
+        ("1.5.0", "1.4.0"),
+        ("1.4.0", "2.4.0"),
+        ("01.4.0", "1.4.0"),
+        ("1.4.0", "1.40.0"),
+    ],
+    ids=["lock-newer-minor", "bullet-newer-minor", "major", "compared-as-text", "not-a-prefix"],
+)
+def test_a_major_minor_mismatch_fails_naming_both(tmp_path: Path, bullet: str, locked: str) -> None:
+    """A major.minor mismatch names both versions and how to fix it."""
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version=locked)), _instructions(bullet))
+    line = _fails_with_one_line(_gate(repo))
+    assert bullet in line
+    assert locked in line
+    assert "/update-lid" in line
+
+
+# @spec CHECKS-GATE-002
+def test_a_mismatch_names_the_values_without_their_quotes(tmp_path: Path) -> None:
+    """The versions named are the values, with their surrounding quotes removed."""
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version="'1.5.0'")), _instructions('"1.4.0"'))
     line = _fails_with_one_line(_gate(repo))
     assert "1.4.0" in line
     assert "1.5.0" in line
-    assert "/update-lid" in line
+    assert "'1.5.0'" not in line
+    assert '"1.4.0"' not in line
+
+
+UNREADABLE = ["v1.4.0", "1", "1.4-rc", "1.4 (walked)", "", f"{chr(0x661)}.{chr(0x664)}"]
+UNREADABLE_IDS = ["v-prefix", "major-only", "suffix", "space-after-minor", "empty", "non-ascii"]
+
+
+# @spec CHECKS-GATE-014
+@pytest.mark.parametrize("bullet", UNREADABLE, ids=UNREADABLE_IDS)
+def test_a_bullet_without_a_major_minor_fails_naming_it(tmp_path: Path, bullet: str) -> None:
+    """An unreadable bullet is named in quotes, and the readable lock version isn't."""
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version="1.4.0")), _instructions(bullet))
+    line = _fails_with_one_line(_gate(repo))
+    assert repr(bullet) in line
+    assert repr("1.4.0") not in line
+
+
+# @spec CHECKS-GATE-014
+@pytest.mark.parametrize("locked", UNREADABLE, ids=UNREADABLE_IDS)
+def test_a_lock_version_without_a_major_minor_fails_naming_it(tmp_path: Path, locked: str) -> None:
+    """An unreadable lock version is named in quotes, and the readable bullet isn't."""
+    # An empty lock value must be quoted, or the line reader sees no field at all.
+    written = locked or "''"
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version=written)), _instructions("1.4.0"))
+    line = _fails_with_one_line(_gate(repo))
+    assert repr(locked) in line
+    assert repr("1.4.0") not in line
+
+
+# @spec CHECKS-GATE-014
+def test_two_unreadable_versions_are_both_named(tmp_path: Path) -> None:
+    """With neither version readable, the one line names both."""
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version="x1.4")), _instructions("v1.4.0"))
+    line = _fails_with_one_line(_gate(repo))
+    assert repr("x1.4") in line
+    assert repr("v1.4.0") in line
+
+
+# @spec CHECKS-GATE-014
+def test_equal_unreadable_versions_still_fail(tmp_path: Path) -> None:
+    """Two identical versions without a major.minor don't pass as equal."""
+    repo = _repo(tmp_path, _lock(LID_ENTRY.format(version="v1.4.0")), _instructions("v1.4.0"))
+    assert repr("v1.4.0") in _fails_with_one_line(_gate(repo))
+
+
+# @spec CHECKS-GATE-015
+@pytest.mark.parametrize(
+    "entry",
+    [
+        LID_ENTRY.replace("  version: {version}\n", ""),
+        LID_ENTRY.replace("  version: {version}\n", "  version:\n"),
+        # The second field matches the bullet, so a reader that keeps the last one would pass.
+        LID_ENTRY.replace("  version: {version}\n", "  version: 2.0.0\n  version: 1.4.0\n"),
+    ],
+    ids=["none", "empty-field", "two"],
+)
+def test_lid_entry_version_count_must_be_one(tmp_path: Path, entry: str) -> None:
+    """An entry with no `version` field, or two, fails rather than picking one."""
+    repo = _repo(tmp_path, _lock(entry), _instructions("1.4.0"))
+    assert "`version` field" in _fails_with_one_line(_gate(repo))
 
 
 # @spec CHECKS-GATE-003
